@@ -17,8 +17,8 @@
                 "host": "opscenter",
                 "protocol": "https",
                 "port": 8443,
-                "user": "system",
-                "password": "manager",
+                "user": "admin",
+                "password": "password",
                 "verify": false
             }
         ]
