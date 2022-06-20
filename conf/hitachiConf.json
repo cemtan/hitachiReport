@@ -16,7 +16,7 @@
             {
                 "host": "opscenter",
                 "protocol": "https",
-                "port": 22016,
+                "port": 8443,
                 "user": "system",
                 "password": "manager",
                 "verify": false
