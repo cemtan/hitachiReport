@@ -291,10 +291,10 @@ def get_analyzer_dataframe(f_data, f_ops):
 
 if __name__ == "__main__":
     try:
-        with open('conf/hitachiData.json') as configFile:
-            hitachiData = json.load(configFile)
-        with open('conf/hitachiConf.json') as configFile:
-            hitachiConfig = json.load(configFile)
+        with open('conf/hitachiData.json') as dataFile:
+            hitachiData = json.load(dataFile)
+        with open('conf/hitachiConf.json') as confFile:
+            hitachiConfig = json.load(confFile)
     except:
         print(style('!!!').failed() + ' hitachiData.json or hitachiConf.json file cannot be opened!')
         raise SystemExit()
