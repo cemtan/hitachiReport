@@ -121,7 +121,7 @@ def generate_session(f_url, f_verify, f_auth):
     try:
         f_response = requests.post(f_url, headers=headers, verify=f_verify, timeout=300)
         if f_response.status_code != http.client.OK: raise requests.HTTPError(f_response)
-        f_token = f_response.headers.json()["X-Auth-Token"]
+        f_token = f_response.headers["X-Auth-Token"]
         return f_token
     except:
         error_msg = 'TASK   : ' + style('Getting token from the administrator').bold() + ' | STATE:' + style('Failed').failed() + ' | POST: ' +  f_url
@@ -160,10 +160,10 @@ def get_date():
             month = t_date.strftime('%m')
         if args.day is not None:
             day = args.day
-            f_sdate = year + month + day + ' 000000'
-            f_edate = year + month + day + ' 235959'
+            f_sdate = str(year) + str(month) + str(day) + ' 000000'
+            f_edate = str(year) + str(month) + str(day) + ' 235959'
         else:
-            f_sdate = year + month + '01' + ' 000000'
+            f_sdate = str(year) + str(month) + '01' + ' 000000'
             f_sdate = datetime.strptime(f_sdate, '%Y%m%d %H%M%S')
             next_month = f_sdate.replace(day=28) + timedelta(days=4)
             f_edate = next_month - timedelta(days=next_month.day)
@@ -185,7 +185,7 @@ def get_time(f_sdate, f_edate, f_len):
 # ### GET Data ########################################## #
 
 def get_administrator_dataframe(f_data, f_ops):
-    f_url = f_data['url'].format(f_ops['protocol'], f_ops['host'], f_ops['port'])
+    global storages
     if token:
         r_df = pd.DataFrame()
         if not os.path.exists(reportDir): os.makedirs(reportDir)
@@ -193,8 +193,18 @@ def get_administrator_dataframe(f_data, f_ops):
         task_end = '| TARGET: ' + f_ops['host']
 
         with Loader(task_start, task_end):
-            f_response = api_get('administrator', f_url, f_ops['verify'], token).json()
-            f_df = eval("pd.json_normalize({})".format(f_data['jsonfilter']))
+            if not storages:
+                f_url = f_data['url'].format(f_ops['protocol'], f_ops['host'], f_ops['port'])
+                f_response = api_get('administrator', f_url, f_ops['verify'], token).json()
+                f_df = eval("pd.json_normalize({})".format(f_data['jsonfilter']))
+                storages = f_df['storageSystemId'].values.tolist()
+            else:
+                f_response = []
+                for storage in storages:
+                    f_url = f_data['url'].format(f_ops['protocol'], f_ops['host'], f_ops['port'], storage)
+                    t_response = api_get('administrator', f_url, f_ops['verify'], token).json()
+                    f_response.append(t_response)
+                    f_df = eval("pd.json_normalize({})".format(f_data['jsonfilter']))
             if not f_df.empty:
                 for j_item in f_data['data']:
                     for k_item in j_item['parameter']['columnsStr']:
@@ -207,11 +217,11 @@ def get_administrator_dataframe(f_data, f_ops):
                         k = k_item
                         k = k_item.split('InBytes')[0] if 'InBytes' in k_item else k_item
                         k = k_item.split('.')[-2] if '.' in k_item else k_item
+                        f_df[k_item] = f_df[k_item].astype(str).str.replace('nan', '-1', regex=True).astype(float)
                         if '(GB)' in j_item['title']:
                             r_df[k] = f_df[k_item]/1024/1024/1024
                         else:
                             r_df[k] = f_df[k_item]
-                        r_df[k] = r_df[k].astype(float)
                     if not r_df.empty: r_df.to_csv(reportDir + '/' + f_data['table'] + '.' + j_item['id'], sep=' ', header=False, index=False)
         
         files = os.listdir(reportDir)
@@ -260,7 +270,7 @@ def get_analyzer_dataframe(f_data, f_ops):
                 if not f_df.empty:
                     for k_item in j_item['parameter']['columnsStr']:
                         if k_item == 'storageSystemId':
-                            ts_df[k_item] = f_df['signature'].str.split('#').str[1]
+                            ts_df[k_item] = f_df['signature'].astype(str).str.replace('nan', '-1', regex=True).str.split('#').str[1]
                         elif k_item == 'date':
                             ts_df[k_item] = (pd.DataFrame(t_sdate, t_edate, len(f_df)))['date']
                         else:
@@ -309,6 +319,7 @@ if __name__ == "__main__":
 
     if len(hitachiConfig['administrator']) > 0:
         for ops in hitachiConfig['administrator']:
+            storages = None
             token_url = "{}://{}:{}/v1/security/tokens".format(ops['protocol'], ops['host'], ops['port'])
             auth = get_auth(ops)
             token = generate_session(token_url, ops['verify'], auth)

@@ -80,10 +80,10 @@
                             {
                                 "columnsFloat": 
                                     [
-                                        "softwareSavingEfficiency.totalSoftwareSavingRate.value",
-                                        "softwareSavingEfficiency.compressionRate.value",
-                                        "softwareSavingEfficiency.deduplicationRate.value",
-                                        "softwareSavingEfficiency.patternMatchingRate.value"
+                                        "totalEfficiency.dataReductionEfficiency.softwareSavingEfficiency.totalSoftwareSavingRate.value",
+                                        "totalEfficiency.dataReductionEfficiency.softwareSavingEfficiency.compressionRate.value",
+                                        "totalEfficiency.dataReductionEfficiency.softwareSavingEfficiency.deduplicationRate.value",
+                                        "totalEfficiency.dataReductionEfficiency.softwareSavingEfficiency.patternMatchingRate.value"
                                     ],
                                 "columnsStr":
                                     [
@@ -99,9 +99,9 @@
                             {
                                 "columnsFloat": 
                                     [
-                                        "fmdSavingEfficiency.totalFmdSavingRate.value",
-                                        "fmdSavingEfficiency.compressionRate.value",
-                                        "fmdSavingEfficiency.patternMatchingRate.value"
+                                        "totalEfficiency.dataReductionEfficiency.fmdSavingEfficiency.totalFmdSavingRate.value",
+                                        "totalEfficiency.dataReductionEfficiency.fmdSavingEfficiency.compressionRate.value",
+                                        "totalEfficiency.dataReductionEfficiency.fmdSavingEfficiency.patternMatchingRate.value"
                                     ],
                                 "columnsStr":
                                     [
