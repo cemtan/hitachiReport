@@ -1,0 +1,25 @@
+{
+    "version": "0.1.0",
+    "administrator": 
+        [
+            {
+                "host": "opscenter",
+                "protocol": "https",
+                "port": 20961,
+                "user": "sysadmin",
+                "password": "sysadmin",
+                "verify": false
+            }
+        ],
+    "analyzer": 
+        [
+            {
+                "host": "opscenter",
+                "protocol": "https",
+                "port": 22016,
+                "user": "system",
+                "password": "manager",
+                "verify": false
+            }
+        ]
+}
