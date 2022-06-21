@@ -99,21 +99,24 @@ class Loader:
 
 # ### API Functions ##################################### #
 
-def api_get(f_type, f_url, f_verify, f_auth, f_query=None):
-    if f_type == 'administrator':
-        headers['X-Auth-Token'] = '{}'.format(f_auth)
-    elif f_type == 'analyzer':
-        headers['Authorization'] = 'Basic {}'.format(f_auth)
-
+def api_get(f_url, f_verify, f_auth):
+    headers['X-Auth-Token'] = '{}'.format(f_auth)
     try:
-        if not f_query:
-            f_response = requests.get(url=f_url, headers=headers, verify=f_verify, timeout=300)
-        else:
-            f_response = requests.get(url=f_url, headers=headers, data=f_query, verify=f_verify, timeout=300)
+        f_response = requests.get(url=f_url, headers=headers, verify=f_verify, timeout=300)
         if f_response.status_code != http.client.OK: raise requests.HTTPError(f_response)
         return f_response
     except:
-        error_msg = 'TASK   : ' + style('Getting data from the ' + f_type).bold() + ' | STATE:' + style('Failed').failed() + ' | GET: ' +  f_url + ' | DATA: ' + f_query
+        error_msg = 'TASK   : ' + style('Getting data from the administrator').bold() + ' | STATE:' + style('Failed').failed() + ' | GET: ' +  f_url
+        raise Exception(error_msg)
+
+def api_post(f_url, f_verify, f_auth, f_query):
+    headers['Authorization'] = 'Basic {}'.format(f_auth)
+    try:
+        f_response = requests.post(url=f_url, headers=headers, data=f_query, verify=f_verify, timeout=300)
+        if f_response.status_code != http.client.OK: raise requests.HTTPError(f_response)
+        return f_response
+    except:
+        error_msg = 'TASK   : ' + style('Getting data from the analyzer').bold() + ' | STATE:' + style('Failed').failed() + ' | GET: ' +  f_url + ' | DATA: ' + f_query
         raise Exception(error_msg)
 
 def generate_session(f_url, f_verify, f_auth):
@@ -161,7 +164,8 @@ def get_date():
         if args.day is not None:
             day = args.day
             f_sdate = str(year) + str(month) + str(day) + ' 000000'
-            f_edate = str(year) + str(month) + str(day) + ' 235959'
+            f_sdate = datetime.strptime(f_sdate, '%Y%m%d %H%M%S')
+            f_edate = f_sdate.replace(hour=23).replace(minute=59).replace(second=59)
         else:
             f_sdate = str(year) + str(month) + '01' + ' 000000'
             f_sdate = datetime.strptime(f_sdate, '%Y%m%d %H%M%S')
@@ -178,7 +182,7 @@ def get_time(f_sdate, f_edate, f_len):
         f_sdate += timedelta(minutes=10)
     t_df['date'] = dict
     n = int(f_len/len(t_df))
-    pd.concat([t_df]*n, ignore_index=True)
+    t_df = pd.concat([t_df]*n, ignore_index=True)
     return t_df
 
 
@@ -187,7 +191,7 @@ def get_time(f_sdate, f_edate, f_len):
 def get_administrator_dataframe(f_data, f_ops):
     global storages
     if token:
-        r_df = pd.DataFrame()
+        f_df = pd.DataFrame()
         if not os.path.exists(reportDir): os.makedirs(reportDir)
         task_start = 'TASK   : ' + style('Getting "' + f_data['title'] + '" information from the administrator').bold() + ' | STATE:'
         task_end = '| TARGET: ' + f_ops['host']
@@ -195,18 +199,21 @@ def get_administrator_dataframe(f_data, f_ops):
         with Loader(task_start, task_end):
             if not storages:
                 f_url = f_data['url'].format(f_ops['protocol'], f_ops['host'], f_ops['port'])
-                f_response = api_get('administrator', f_url, f_ops['verify'], token).json()
+                f_response = api_get(f_url, f_ops['verify'], token).json()
                 f_df = eval("pd.json_normalize({})".format(f_data['jsonfilter']))
                 storages = f_df['storageSystemId'].values.tolist()
             else:
-                f_response = []
+                t_df = pd.DataFrame()
                 for storage in storages:
                     f_url = f_data['url'].format(f_ops['protocol'], f_ops['host'], f_ops['port'], storage)
-                    t_response = api_get('administrator', f_url, f_ops['verify'], token).json()
-                    f_response.append(t_response)
-                    f_df = eval("pd.json_normalize({})".format(f_data['jsonfilter']))
+                    f_response = api_get(f_url, f_ops['verify'], token).json()
+                    t_df = eval("pd.json_normalize({})".format(f_data['jsonfilter']))
+                    if not t_df.empty:
+                        t_df['storageSystemId'] = storage
+                        f_df = pd.concat([f_df, t_df], ignore_index=True)
             if not f_df.empty:
                 for j_item in f_data['data']:
+                    r_df = pd.DataFrame()
                     for k_item in j_item['parameter']['columnsStr']:
                         if k_item == 'date':
                             r_df[k_item] = date
@@ -255,8 +262,8 @@ def get_analyzer_dataframe(f_data, f_ops):
                 st_edate = t_edate.strftime('%Y%m%d_%H%M%S')
                 tf_df = pd.DataFrame()
                 ts_df = pd.DataFrame()
-                query = '{"query":"({}}","startTime":"{}}","endTime":"{}}"}'.format(f_data['query'], st_sdate, st_edate)
-                f_response = api_get('analyzer', f_url, f_ops['verify'], query, auth).json()
+                query = '{"query":"' + f_data['query'] + '","startTime":"' + st_sdate + '","endTime":"' + st_edate + '"}'
+                f_response = api_post(f_url, f_ops['verify'], auth, query).json()
             
                 for k_item in j_item['parameter']['columnsFloat']:
                     if f_data['jsonfilter'].count('{}') == 1:
@@ -272,10 +279,10 @@ def get_analyzer_dataframe(f_data, f_ops):
                         if k_item == 'storageSystemId':
                             ts_df[k_item] = f_df['signature'].astype(str).str.replace('nan', '-1', regex=True).str.split('#').str[1]
                         elif k_item == 'date':
-                            ts_df[k_item] = (pd.DataFrame(t_sdate, t_edate, len(f_df)))['date']
+                            ts_df[k_item] = (get_time(t_sdate, t_edate, len(f_df)))['date']
                         else:
                             ts_df[k_item] = f_df['related.signature'].str.split('#').str[1]
-                            ts_df[k_item] = ts_df[k_item].astype(str)
+                        ts_df[k_item] = ts_df[k_item].astype(str)
                 if not ts_df.empty:
                     ts_df = ts_df.join(tf_df)
                     r_df = pd.concat([r_df, ts_df], ignore_index=True)
@@ -283,7 +290,6 @@ def get_analyzer_dataframe(f_data, f_ops):
 
             if not r_df.empty:
                 dict = j_item['parameter']['columnsStr']
-                dict.remove('date')
                 r_df = r_df.sort_values(by=dict)
                 r_df.to_csv(reportDir + '/' + f_data['table'] + '.' + j_item['id'], sep=' ', header=False, index=False)
 
@@ -326,7 +332,7 @@ if __name__ == "__main__":
             for singleData in hitachiData:
                 if singleData['type'] == 'administrator':
                     get_administrator_dataframe(singleData, ops)
-            discard_session(token_url, ops['verify'], auth)
+            discard_session(token_url, ops['verify'], token)
 
     if len(hitachiConfig['analyzer']) > 0:
         for ops in hitachiConfig['analyzer']:
