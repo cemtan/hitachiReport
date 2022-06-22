@@ -1,24 +1,17 @@
 {
     "version": "0.1.0",
-    "administrator": 
+    "ops": 
         [
             {
                 "host": "opscenter",
-                "protocol": "https",
-                "port": 20961,
-                "user": "sysadmin",
-                "password": "sysadmin",
-                "verify": false
-            }
-        ],
-    "analyzer": 
-        [
-            {
-                "host": "opscenter",
-                "protocol": "https",
-                "port": 8443,
-                "user": "admin",
-                "password": "password",
+                "administratorProtocol": "https",
+                "administratorPort": 20961,
+                "administratorUser": "sysadmin",
+                "administratorPassword": "sysadmin",
+                "analyzerProtocol": "https",
+                "analyzerPort": 8443,
+                "analyzerUser": "admin",
+                "analyzerPassword": "password",
                 "verify": false
             }
         ]

@@ -343,7 +343,7 @@
         "type": "analyzer",
         "table": "hvMpUtilization",
         "url": "{}://{}:{}/dbapi.do?action=query&dataset=defaultDs&processSync=true",
-        "jsonfilter": "{{'result':[r for r in f_response['result'] if '{}' in r.keys()]}}['result'], record_path=['{}', 'data'],meta=['signature'], record_prefix='data', errors='ignore'",
+        "jsonfilter": "{{'result':[r for r in f_response['result'] if '{}' in r.keys()]}}['result'], record_path=['{}', 'data'],meta=[['signature'],['{}', 'start']], record_prefix='data', errors='ignore'",
         "query": "(useStrictAggr=true)raidStorage[@utilization rx b .*]{resourceRollupOp=avg,inputCounters=raidMPB.utilization,intervalRollUpOp=AVG,outputIntervalInSec=600}",
         "data": 
             [
@@ -370,7 +370,7 @@
         "type": "analyzer",
         "table": "hvMpbUtilization",
         "url": "{}://{}:{}/dbapi.do?action=query&dataset=defaultDs&processSync=true",
-        "jsonfilter": "{{'result':[r for r in f_response['result'] if 'related' in r.keys()]}}['result'], record_path=['related', '{}', 'data'],meta=['signature', ['related', 'signature']], record_prefix='data', errors='ignore'",
+        "jsonfilter": "{{'result':[r for r in f_response['result'] if 'related' in r.keys()]}}['result'], record_path=['related', '{}', 'data'],meta=['signature', ['related', 'signature'], ['related', '{}', 'start']], record_prefix='data', errors='ignore'",
         "query": "(useStrictAggr=true)raidStorage/raidMPB[@utilization rx b .*]{intervalRollUpOp=AVG,outputIntervalInSec=600}",
         "data": 
             [
@@ -398,7 +398,7 @@
         "type": "analyzer",
         "table": "hvIops",
         "url": "{}://{}:{}/dbapi.do?action=query&dataset=defaultDs&processSync=true",
-        "jsonfilter": "{{'result':[r for r in f_response['result'] if '{}' in r.keys()]}}['result'], record_path=['{}', 'data'],meta=['signature'], record_prefix='data', errors='ignore'",
+        "jsonfilter": "{{'result':[r for r in f_response['result'] if '{}' in r.keys()]}}['result'], record_path=['{}', 'data'],meta=[['signature'],['{}', 'start']], record_prefix='data', errors='ignore'",
         "query": "(useStrictAggr=true)raidStorage[=name rx .*][@readIOPS rx b .*]{resourceRollupOp=avg,inputCounters=raidLdev.readIOPS,intervalRollUpOp=AVG,outputIntervalInSec=600}[@writeIOPS rx b .*]{resourceRollupOp=avg,inputCounters=raidLdev.writeIOPS,intervalRollUpOp=AVG,outputIntervalInSec=600}[@totalIOPS rx b .*]{resourceRollupOp=avg,inputCounters=raidLdev.totalIOPS,intervalRollUpOp=AVG,outputIntervalInSec=600}[@randomReadIOPS rx b .*]{resourceRollupOp=avg,inputCounters=raidLdev.randomReadIOPS,intervalRollUpOp=AVG,outputIntervalInSec=600}[@randomWriteIOPS rx b .*]{resourceRollupOp=avg,inputCounters=raidLdev.randomWriteIOPS,intervalRollUpOp=AVG,outputIntervalInSec=600}[@seqReadIOPS rx b .*]{resourceRollupOp=avg,inputCounters=raidLdev.seqReadIOPS,intervalRollUpOp=AVG,outputIntervalInSec=600}[@seqWriteIOPS rx b .*]{resourceRollupOp=avg,inputCounters=raidLdev.seqWriteIOPS,intervalRollUpOp=AVG,outputIntervalInSec=600}",
         "data": 
             [
@@ -410,7 +410,7 @@
                         "columnsFloat": 
                             [
                                 "readIOPS",
-                                "readIOPS",
+                                "writeIOPS",
                                 "totalIOPS",
                                 "randomReadIOPS",
                                 "randomWriteIOPS",
@@ -431,7 +431,7 @@
         "type": "analyzer",
         "table": "hvTransferRate",
         "url": "{}://{}:{}/dbapi.do?action=query&dataset=defaultDs&processSync=true",
-        "jsonfilter": "{{'result':[r for r in f_response['result'] if '{}' in r.keys()]}}['result'], record_path=['{}', 'data'],meta=['signature'], record_prefix='data', errors='ignore'",
+        "jsonfilter": "{{'result':[r for r in f_response['result'] if '{}' in r.keys()]}}['result'], record_path=['{}', 'data'],meta=[['signature'],['{}', 'start']], record_prefix='data', errors='ignore'",
         "query": "(useStrictAggr=true)raidStorage[=name rx .*][@readTransRate rx b .*]{resourceRollupOp=avg,inputCounters=raidLdev.readTransRate,intervalRollUpOp=AVG,outputIntervalInSec=600}[@writeTransRate rx b .*]{resourceRollupOp=avg,inputCounters=raidLdev.writeTransRate,intervalRollUpOp=AVG,outputIntervalInSec=600}[@transferRate rx b .*]{resourceRollupOp=avg,inputCounters=raidLdev.transferRate,intervalRollUpOp=AVG,outputIntervalInSec=600}[@randomReadTransRate rx b .*]{resourceRollupOp=avg,inputCounters=raidLdev.randomReadTransRate,intervalRollUpOp=AVG,outputIntervalInSec=600}[@randomWriteTransRate rx b .*]{resourceRollupOp=avg,inputCounters=raidLdev.randomWriteTransRate,intervalRollUpOp=AVG,outputIntervalInSec=600}[@seqReadTransRate rx b .*]{resourceRollupOp=avg,inputCounters=raidLdev.seqReadTransRate,intervalRollUpOp=AVG,outputIntervalInSec=600}[@seqWriteTransRate rx b .*]{resourceRollupOp=avg,inputCounters=raidLdev.seqWriteTransRate,intervalRollUpOp=AVG,outputIntervalInSec=600}",
         "data": 
             [
@@ -464,7 +464,7 @@
         "type": "analyzer",
         "table": "hvResponseTime",
         "url": "{}://{}:{}/dbapi.do?action=query&dataset=defaultDs&processSync=true",
-        "jsonfilter": "{{'result':[r for r in f_response['result'] if '{}' in r.keys()]}}['result'], record_path=['{}', 'data'],meta=['signature'], record_prefix='data', errors='ignore'",
+        "jsonfilter": "{{'result':[r for r in f_response['result'] if '{}' in r.keys()]}}['result'], record_path=['{}', 'data'],meta=[['signature'],['{}', 'start']], record_prefix='data', errors='ignore'",
         "query": "(useStrictAggr=true)raidStorage[=name rx .*][@readResponseTime rx b .*]{resourceRollupOp=avg,inputCounters=raidLdev.readResponseTime,intervalRollUpOp=AVG,outputIntervalInSec=600}[@writeResponseTime rx b .*]{resourceRollupOp=avg,inputCounters=raidLdev.writeResponseTime,intervalRollUpOp=AVG,outputIntervalInSec=600}[@responseTime rx b .*]{resourceRollupOp=avg,inputCounters=raidLdev.responseTime,intervalRollUpOp=AVG,outputIntervalInSec=600}",
         "data": 
             [
@@ -493,7 +493,7 @@
         "type": "analyzer",
         "table": "hvCache",
         "url": "{}://{}:{}/dbapi.do?action=query&dataset=defaultDs&processSync=true",
-        "jsonfilter": "{{'result':[r for r in f_response['result'] if '{}' in r.keys()]}}['result'], record_path=['{}', 'data'],meta=['signature'], record_prefix='data', errors='ignore'",
+        "jsonfilter": "{{'result':[r for r in f_response['result'] if '{}' in r.keys()]}}['result'], record_path=['{}', 'data'],meta=[['signature'],['{}', 'start']], record_prefix='data', errors='ignore'",
         "query": "(useStrictAggr=true)raidStorage[=name rx .*][@utilization rx b .*]{resourceRollupOp=avg,inputCounters=raidClpr.utilization,intervalRollUpOp=AVG,outputIntervalInSec=600}[@writePendingRate rx b .*]{resourceRollupOp=avg,inputCounters=raidClpr.writePendingRate,intervalRollUpOp=AVG,outputIntervalInSec=600}",
         "data": 
             [
@@ -521,18 +521,19 @@
         "type": "analyzer",
         "table": "hvBlockSizeSR",
         "url": "{}://{}:{}/dbapi.do?action=query&dataset=defaultDs&processSync=true",
-        "jsonfilter": "{{'result':[r for r in f_response['result'] if '{}' in r.keys()]}}['result'], record_path=['{}', 'data'],meta=['signature'], record_prefix='data', errors='ignore'",
+        "jsonfilter": "{{'result':[r for r in f_response['result'] if '{}' in r.keys()]}}['result'], record_path=['{}', 'data'],meta=[['signature'],['{}', 'start']], record_prefix='data', errors='ignore'",
         "query": "(useStrictAggr=true)raidStorage[=name rx .*][@randomBlockSize rx b .*]{resourceRollupOp=weightedAvg,inputCounters=(raidLdev.randomIOPS:randomBlockSize),intervalRollUpOp=AVG,outputIntervalInSec=600}[@seqBlockSize rx b .*]{resourceRollupOp=weightedAvg,inputCounters=(raidLdev.seqIOPS:seqBlockSize),intervalRollUpOp=AVG,outputIntervalInSec=600}",
         "data": 
             [
                 {
                 "id": "1",
-                "title": "Random Block Size (KB/IO)",
+                "title": "Block Size (KB/IO)",
                 "parameter":
                     {
                         "columnsFloat": 
                             [
-                                "randomBlockSize"
+                                "randomBlockSize",
+                                "seqBlockSize"
                             ],
                         "columnsStr":
                             [
@@ -540,23 +541,7 @@
                                 "date"
                             ]
                     }
-                },
-                {
-                    "id": "2",
-                    "title": "Sequential Block Size (KB/IO)",
-                    "parameter":
-                        {
-                            "columnsFloat": 
-                                [
-                                    "seqBlockSize"
-                                ],
-                            "columnsStr":
-                                [
-                                    "storageSystemId",
-                                    "date"
-                                ]
-                        }
-                    }
+                }
             ]
     },
     {
@@ -564,7 +549,7 @@
         "type": "analyzer",
         "table": "hvBlockSizeRW",
         "url": "{}://{}:{}/dbapi.do?action=query&dataset=defaultDs&processSync=true",
-        "jsonfilter": "{{'result':[r for r in f_response['result'] if 'related' in r.keys()]}}['result'], record_path=['related', '{}', 'data'],meta=['signature', ['related', 'signature']], record_prefix='data', errors='ignore'",
+        "jsonfilter": "{{'result':[r for r in f_response['result'] if 'related' in r.keys()]}}['result'], record_path=['related', '{}', 'data'],meta=['signature', ['related', 'signature'], ['related', '{}', 'start']], record_prefix='data', errors='ignore'",
         "query": "(useStrictAggr=true)raidStorage/&raidPool{includeSelfInRelation=true}[@writeKBPIO rx b .*]{intervalRollUpOp=AVG,outputIntervalInSec=600}[@readKBPIO rx b .*]{intervalRollUpOp=AVG,outputIntervalInSec=600}",
         "data": 
             [
@@ -593,7 +578,7 @@
         "type": "analyzer",
         "table": "hvPortResponse",
         "url": "{}://{}:{}/dbapi.do?action=query&dataset=defaultDs&processSync=true",
-        "jsonfilter": "{{'result':[r for r in f_response['result'] if 'related' in r.keys()]}}['result'], record_path=['related', '{}', 'data'],meta=['signature', ['related', 'signature']], record_prefix='data', errors='ignore'",
+        "jsonfilter": "{{'result':[r for r in f_response['result'] if 'related' in r.keys()]}}['result'], record_path=['related', '{}', 'data'],meta=['signature', ['related', 'signature'], ['related', '{}', 'start']], record_prefix='data', errors='ignore'",
         "query": "(useStrictAggr=true)raidStorage/&raidPort[@responseTime rx b .*]{intervalRollUpOp=AVG,outputIntervalInSec=600}[@readKBPIO rx b .*]{intervalRollUpOp=AVG,outputIntervalInSec=600}",
         "data": 
             [

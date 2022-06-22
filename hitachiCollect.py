@@ -6,11 +6,11 @@
 
 import requests
 import json
-import time
-import os, sys, re
+import os, sys, shutil, np
 import base64
 import http.client
 import argparse
+import warnings
 import pandas as pd
 from itertools import cycle
 from shutil import get_terminal_size
@@ -142,8 +142,8 @@ def discard_session(f_url, f_verify, f_auth):
 
 # ### Helpers ########################################### #
 
-def get_auth(f_ops):
-    f_up = "{}:{}".format(f_ops['user'], f_ops['password'])
+def get_auth(f_user, f_password):
+    f_up = "{}:{}".format(f_user, f_password)
     f_auth = base64.b64encode(f_up.encode()).decode()
     return f_auth
 
@@ -174,79 +174,96 @@ def get_date():
             f_edate = f_edate.replace(hour=23).replace(minute=59).replace(second=59)
     return f_sdate, f_edate
 
-def get_time(f_sdate, f_edate, f_len):
-    dict = []
-    t_df = pd.DataFrame()
-    while f_sdate < f_edate:
-        dict.append(f_sdate.strftime('%Y.%m.%d %H:%M:%S'))
-        f_sdate += timedelta(minutes=10)
-    t_df['date'] = dict
-    n = int(f_len/len(t_df))
-    t_df = pd.concat([t_df]*n, ignore_index=True)
-    return t_df
+def get_time(f_df, f_item):
+    r_df = pd.DataFrame()
+    list = f_df['signature'].drop_duplicates().to_list()
+    if not 'related.' in str(f_df.columns):
+        f_col = f_item + '.start'
+    else:
+        f_col = 'related.' + f_item + '.start'
+    if f_col in f_df.columns:
+        f_df = f_df.rename(columns = {f_col:'date'})
+    #f_df['date'] = f_df['date'].apply(lambda _: datetime.strptime(_,"%Y%m%d_%H%M%S"))
+    f_df['date'] = pd.to_datetime(f_df['date'], format='%Y%m%d_%H%M%S')
+    for t_item in list:
+        t_df = f_df.loc[f_df['signature'] == t_item].reset_index(drop=True)
+        
+        if 'related.' in f_col:
+            sublist = t_df['related.signature'].drop_duplicates().to_list()
+            for u_item in sublist:
+                u_df = t_df.loc[t_df['related.signature'] == u_item].reset_index(drop=True)
+                u_df['date'] = pd.to_datetime(u_df['date'].astype(str)) + u_df.index * pd.DateOffset(minutes=10)
+                r_df = pd.concat([r_df, u_df], ignore_index=True)
+        else:
+            t_df['date'] = pd.to_datetime(t_df['date'].astype(str)) + t_df.index * pd.DateOffset(minutes=10)
+            r_df = pd.concat([r_df, t_df], ignore_index=True)
+    r_df['date'] = r_df['date'].dt.strftime('%Y.%m.%d %H:%M:%S')
+    return r_df
 
 
 # ### GET Data ########################################## #
 
 def get_administrator_dataframe(f_data, f_ops):
     global storages
-    if token:
-        f_df = pd.DataFrame()
-        if not os.path.exists(reportDir): os.makedirs(reportDir)
-        task_start = 'TASK   : ' + style('Getting "' + f_data['title'] + '" information from the administrator').bold() + ' | STATE:'
-        task_end = '| TARGET: ' + f_ops['host']
+    f_df = pd.DataFrame()
+    if not os.path.exists(reportDir): os.makedirs(reportDir)
+    task_start = 'TASK   : ' + style('Getting "' + f_data['title'] + '" information from the administrator "' + f_ops['host'] + '"').bold() + ' | STATE:'
+    task_end = '| TARGET: ' + f_ops['host']
 
-        with Loader(task_start, task_end):
-            if not storages:
-                f_url = f_data['url'].format(f_ops['protocol'], f_ops['host'], f_ops['port'])
+    with Loader(task_start, task_end):
+        if not storages:
+            f_url = f_data['url'].format(f_ops['administratorProtocol'], f_ops['host'], f_ops['administratorPort'])
+            f_response = api_get(f_url, f_ops['verify'], token).json()
+            f_df = eval("pd.json_normalize({})".format(f_data['jsonfilter']))
+            storages = f_df['storageSystemId'].values.tolist()
+        else:
+            t_df = pd.DataFrame()
+            for storage in storages:
+                f_url = f_data['url'].format(f_ops['administratorProtocol'], f_ops['host'], f_ops['administratorPort'], storage)
                 f_response = api_get(f_url, f_ops['verify'], token).json()
-                f_df = eval("pd.json_normalize({})".format(f_data['jsonfilter']))
-                storages = f_df['storageSystemId'].values.tolist()
-            else:
-                t_df = pd.DataFrame()
-                for storage in storages:
-                    f_url = f_data['url'].format(f_ops['protocol'], f_ops['host'], f_ops['port'], storage)
-                    f_response = api_get(f_url, f_ops['verify'], token).json()
-                    t_df = eval("pd.json_normalize({})".format(f_data['jsonfilter']))
-                    if not t_df.empty:
-                        t_df['storageSystemId'] = storage
-                        f_df = pd.concat([f_df, t_df], ignore_index=True)
-            if not f_df.empty:
-                for j_item in f_data['data']:
-                    r_df = pd.DataFrame()
-                    for k_item in j_item['parameter']['columnsStr']:
-                        if k_item == 'date':
-                            r_df[k_item] = date
-                        else:
+                t_df = eval("pd.json_normalize({})".format(f_data['jsonfilter']))
+                if not t_df.empty:
+                    t_df['storageSystemId'] = storage
+                    f_df = pd.concat([f_df, t_df], ignore_index=True)
+        if not f_df.empty:
+            for j_item in f_data['data']:
+                r_df = pd.DataFrame()
+                for k_item in j_item['parameter']['columnsStr']:
+                    if k_item == 'date':
+                        r_df[k_item] = date
+                    else:
+                        if k_item in f_df.columns:
                             r_df[k_item] = f_df[k_item]
-                        r_df[k_item] = r_df[k_item].astype(str)
-                    for k_item in j_item['parameter']['columnsFloat']:
-                        k = k_item
-                        k = k_item.split('InBytes')[0] if 'InBytes' in k_item else k_item
-                        k = k_item.split('.')[-2] if '.' in k_item else k_item
-                        f_df[k_item] = f_df[k_item].astype(str).str.replace('nan', '-1', regex=True).astype(float)
+                        else:
+                            r_df[k_item] = None
+                    r_df[k_item] = r_df[k_item].astype(str)
+                for k_item in j_item['parameter']['columnsFloat']:
+                    k = k_item
+                    k = k_item.split('InBytes')[0] if 'InBytes' in k_item else k_item
+                    k = k_item.split('.')[-2] if '.' in k_item else k_item
+                    if k_item in f_df.columns:
                         if '(GB)' in j_item['title']:
                             r_df[k] = f_df[k_item]/1024/1024/1024
                         else:
                             r_df[k] = f_df[k_item]
-                    if not r_df.empty: r_df.to_csv(reportDir + '/' + f_data['table'] + '.' + j_item['id'], sep=' ', header=False, index=False)
-        
-        files = os.listdir(reportDir)
-        num_of_items = sum(f_data['table'] in s for s in files)
-        if f_df.empty or num_of_items != len(f_data['data']):
-            error_msg = 'TASK   : ' + style('Getting "' + f_data['title'] + '" information from the administrator').bold() + ' | STATE:' + style('Failed').failed() + ' | GET: ' +  f_url
-            raise Exception(error_msg)
-        else:
-            success_msg = 'TASK   : ' + style('Getting "' + f_data['title'] + '" information from the administrator').bold() + ' | STATE:' + style('Succeeded').succeeded()
-            print(success_msg)
-    else:
-        error_msg = 'TASK   : ' + style('Getting token from the administrator').bold() + ' | STATE:' + style('Failed').failed() + ' | POST: ' +  token_url
+                    else:
+                        r_df[k] = -1
+                    r_df[k] = r_df[k].astype(str).str.replace('nan', '-1', regex=True).astype(float)
+                if not r_df.empty: r_df.to_csv(reportDir + '/' + f_data['table'] + '.' + j_item['id'], sep=' ', header=False, index=False)
+    
+    files = os.listdir(reportDir)
+    num_of_items = sum(f_data['table'] in s for s in files)
+    if f_df.empty or num_of_items != len(f_data['data']):
+        error_msg = 'TASK   : ' + style('Getting "' + f_data['title'] + '" information from the administrator').bold() + ' | STATE:' + style('Failed').failed() + ' | GET: ' +  f_url
         raise Exception(error_msg)
+    else:
+        success_msg = 'TASK   : ' + style('Getting "' + f_data['title'] + '" information from the administrator "' + f_ops['host'] + '"').bold() + ' | STATE:' + style('Succeeded').succeeded()
+        print(success_msg)
 
 def get_analyzer_dataframe(f_data, f_ops):
-    f_url = f_data['url'].format(f_ops['protocol'], f_ops['host'], f_ops['port'])
+    f_url = f_data['url'].format(f_ops['analyzerProtocol'], f_ops['host'], f_ops['analyzerPort'])
     if not os.path.exists(reportDir): os.makedirs(reportDir)
-    task_start = 'TASK   : ' + style('Getting "' + f_data['title'] + '" information from analyzer').bold() + ' | STATE:'
+    task_start = 'TASK   : ' + style('Getting "' + f_data['title'] + '" information from analyzer "' + f_ops['host'] + '"').bold() + ' | STATE:'
     task_end = '| TARGET: ' + f_ops['host']
 
     with Loader(task_start, task_end):
@@ -255,51 +272,62 @@ def get_analyzer_dataframe(f_data, f_ops):
             t_edate = sDate
             t_sdate = sDate
             while t_edate != eDate:
+                u_df = pd.DataFrame()
                 t_edate = (t_sdate + timedelta(days=6)).replace(hour=23).replace(minute=59).replace(second=59)
                 if t_edate > eDate:
                     t_edate = eDate
                 st_sdate = t_sdate.strftime('%Y%m%d_%H%M%S')
                 st_edate = t_edate.strftime('%Y%m%d_%H%M%S')
-                tf_df = pd.DataFrame()
-                ts_df = pd.DataFrame()
                 query = '{"query":"' + f_data['query'] + '","startTime":"' + st_sdate + '","endTime":"' + st_edate + '"}'
                 f_response = api_post(f_url, f_ops['verify'], auth, query).json()
             
                 for k_item in j_item['parameter']['columnsFloat']:
-                    if f_data['jsonfilter'].count('{}') == 1:
-                        j_filter = f_data['jsonfilter'].format(k_item)
-                    elif f_data['jsonfilter'].count('{}') == 2:
+                    t_df = pd.DataFrame()
+                    if f_data['jsonfilter'].count('{}') == 2:
                         j_filter = f_data['jsonfilter'].format(k_item, k_item)
-                    f_df = eval("pd.json_normalize({})".format(j_filter))
-                    if not f_df.empty:
-                        tf_df[k_item] = f_df['data0']
-                        tf_df[k_item] = tf_df[k_item].astype(float)
-                if not f_df.empty:
-                    for k_item in j_item['parameter']['columnsStr']:
-                        if k_item == 'storageSystemId':
-                            ts_df[k_item] = f_df['signature'].astype(str).str.replace('nan', '-1', regex=True).str.split('#').str[1]
-                        elif k_item == 'date':
-                            ts_df[k_item] = (get_time(t_sdate, t_edate, len(f_df)))['date']
-                        else:
-                            ts_df[k_item] = f_df['related.signature'].str.split('#').str[1]
-                        ts_df[k_item] = ts_df[k_item].astype(str)
-                if not ts_df.empty:
-                    ts_df = ts_df.join(tf_df)
-                    r_df = pd.concat([r_df, ts_df], ignore_index=True)
+                    elif f_data['jsonfilter'].count('{}') == 3:
+                        j_filter = f_data['jsonfilter'].format(k_item, k_item, k_item)
+                    try:
+                        f_df = eval("pd.json_normalize({})".format(j_filter))
+                        if not f_df.empty:
+                            f_df = get_time(f_df, k_item)
+                            for s_item in j_item['parameter']['columnsStr']:
+                                if s_item == 'storageSystemId':
+                                    t_df[s_item] = f_df['signature'].str.split('#').str[1]
+                                elif s_item == 'date':
+                                    t_df[s_item] = f_df[s_item]
+                                else:
+                                    t_df[s_item] = f_df['related.signature'].str.split('#').str[1]
+                                t_df[s_item] = t_df[s_item].astype(str)
+                            t_df[k_item] = f_df['data0']
+                            t_df[k_item] = t_df[k_item].astype(float)
+                    except:
+                        warning_msg = style('!!!').failed() + ' no ' + style(k_item).bold() + ' mql data has been found between ' + style(st_sdate).bold() + ' and ' + style(st_edate).bold()
+                        print(warning_msg)
+
+                    if u_df.empty:
+                        u_df = t_df
+                    else:
+                        u_df = u_df.merge(t_df, how = 'outer', on = j_item['parameter']['columnsStr'])
+
+                if not t_df.empty:
+                    r_df = pd.concat([r_df, u_df], ignore_index=True)
                 t_sdate = (t_edate + timedelta(days=1)).replace(hour=00).replace(minute=00).replace(second=00)
 
             if not r_df.empty:
-                dict = j_item['parameter']['columnsStr']
-                r_df = r_df.sort_values(by=dict)
+                print(r_df.columns)
+                for k_item in j_item['parameter']['columnsFloat']:
+                    r_df[k_item] = r_df[k_item].replace(np.nan, -1)
+                r_df = r_df.sort_values(by=j_item['parameter']['columnsStr'])
                 r_df.to_csv(reportDir + '/' + f_data['table'] + '.' + j_item['id'], sep=' ', header=False, index=False)
 
     files = os.listdir(reportDir)
     num_of_items = sum(f_data['table'] in s for s in files)
     if num_of_items != len(f_data['data']):
-        error_msg = 'TASK   : ' + style('Getting "' + f_data['title'] + '" information from the analyzer').bold() + ' | STATE:' + style('Failed').failed() + ' | GET: ' +  f_url
+        error_msg = 'TASK   : ' + style('Getting "' + f_data['title'] + '" information from the analyzer').bold() + ' | STATE:' + style('Failed').failed() + ' | GET: ' +  f_url + ' | QUERY: ' + query
         raise Exception(error_msg)
     else:
-        success_msg = 'TASK   : ' + style('Getting "' + f_data['title'] + '" information from the analyzer').bold() + ' | STATE:' + style('Succeeded').succeeded()
+        success_msg = 'TASK   : ' + style('Getting "' + f_data['title'] + '" information from the analyzer "' + f_ops['host'] + '"').bold() + ' | STATE:' + style('Succeeded').succeeded()
         print(success_msg)
 
 
@@ -316,6 +344,7 @@ if __name__ == "__main__":
         raise SystemExit()
 
     requests.packages.urllib3.disable_warnings()
+    warnings.simplefilter(action='ignore', category=pd.errors.PerformanceWarning)
     parser, args = parse_args()
     check_parse_args(parser)
     headers = {"Content-Type": "application/json", "Accept": "application/json"}
@@ -323,21 +352,27 @@ if __name__ == "__main__":
     date = datetime.today().strftime('%Y.%m.%d %H:%M:%S')
     sDate, eDate = get_date()
 
-    if len(hitachiConfig['administrator']) > 0:
-        for ops in hitachiConfig['administrator']:
+    if len(hitachiConfig['ops']) > 0:
+        for ops in hitachiConfig['ops']:
             storages = None
-            token_url = "{}://{}:{}/v1/security/tokens".format(ops['protocol'], ops['host'], ops['port'])
-            auth = get_auth(ops)
+            token_url = "{}://{}:{}/v1/security/tokens".format(ops['administratorProtocol'], ops['host'], ops['administratorPort'])
+            auth = get_auth(ops['administratorUser'], ops['administratorPassword'])
             token = generate_session(token_url, ops['verify'], auth)
-            for singleData in hitachiData:
-                if singleData['type'] == 'administrator':
-                    get_administrator_dataframe(singleData, ops)
-            discard_session(token_url, ops['verify'], token)
+            if token:
+                auth = get_auth(ops['analyzerUser'], ops['analyzerPassword'])
+                for singleData in hitachiData:
+                    if singleData['type'] == 'administrator':
+                        get_administrator_dataframe(singleData, ops)
+                    elif singleData['type'] == 'analyzer':
+                        get_analyzer_dataframe(singleData, ops)
+                discard_session(token_url, ops['verify'], token)
+            else:
+                error_msg = 'TASK   : ' + style('Getting token from the administrator "' + ops['host'] + '"').bold() + ' | STATE:' + style('Failed').failed() + ' | POST: ' +  token_url
+                raise Exception(error_msg)
 
-    if len(hitachiConfig['analyzer']) > 0:
-        for ops in hitachiConfig['analyzer']:
-            auth = get_auth(ops)
-            for singleData in hitachiData:
-                if singleData['type'] == 'analyzer':
-                    get_analyzer_dataframe(singleData, ops)
-
+    num_of_files = len(os.listdir(reportDir))
+    if num_of_files > 0:
+        shutil.make_archive(reportDir, format='zip', root_dir=reportDir)
+    shutil.rmtree(reportDir)
+    currentDir = os.getcwd()
+    print(style('{}.zip report file created under {} directory.'.format(reportDir, currentDir)).succeeded())
