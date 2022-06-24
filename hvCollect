@@ -316,7 +316,6 @@ def get_analyzer_dataframe(f_data, f_ops):
                 t_sdate = (t_edate + timedelta(days=1)).replace(hour=00).replace(minute=00).replace(second=00)
 
             if not r_df.empty:
-                print(r_df.columns)
                 for k_item in j_item['parameter']['columnsFloat']:
                     r_df[k_item] = r_df[k_item].replace(np.nan, -1)
                 r_df = r_df.sort_values(by=j_item['parameter']['columnsStr'])
