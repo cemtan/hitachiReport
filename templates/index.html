@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="sidebar">
+    <table cellspacing="0" cellpadding="0" style="border-collapse: collapse;">
+        <tr style="border-bottom: 1px solid #D0D0D0;">
+            <td class="tabletite" style="width:70px;"><h7><a style="color: chocolate;" href="{{ url_for('sortBySerial') }}">Storage</a></h7></td>
+            <td class="tabletite" style="width:190px;"><h7><a style="color: chocolate;" href="{{ url_for('sortbyModel') }}">Model</a></h7></td>
+            <td class="tabletite" style="width:130px;"><h7><a style="color: chocolate;" href="{{ url_for('sortByDate') }}">Entry date</a></h7></td>
+            <td class="tabletite" style="width:30px;"><h7><a style="color: chocolate;" href="{{ url_for('deleteAll') }}" onclick="return confirm('Are you sure you wish to delete all storages?')">Action</a></h7></td>
+        </tr>
+    {% for storage in storages %}
+        <td style="width:70px;">
+        <a href="{{ url_for('post', storageSystemId=storage['storageSystemId']) }}">
+            <h8>{{ storage['storageSystemId'] }}</h8>
+        </a>
+        </td>
+        <td style="width:190px;">
+        <span class="badge badge-warning">{{ storage['model'] }}</span>
+        </td>
+        <td style="width:130px;">
+        <span class="badge badge-primary">{{ storage['date'] }}</span>
+        </td>
+        <td style="width:30px;">
+            <a href="{{ url_for('deleteStorage', storageSystemId=storage['storageSystemId']) }}" onclick="return confirm('Are you sure you wish to delete the storage?')">Delete</a>
+        </td>
+        </tr>
+    {% endfor %}
+    </table>
+</div>
+<div style="position: absolute; bottom: 0px;">
+    {% for message in get_flashed_messages() %}
+        {{ message }}
+    {% endfor %}
+</div>
+<div class="mainplot">
+        <b>
+            <u>
+                <span style="font-size:10pt;font-family:&quot;Arial&quot;,&quot;sans-serif&quot;">COLLECTING STORAGE DATA</span>
+            </u>
+        </b>
+        <br>
+        <span style="font-size:8pt;font-family:&quot;Arial&quot;,&quot;sans-serif&quot;">
+        <br>
+        Use hvCollect to generate a report:
+        <ul>
+            <li>Download following tool to collect report data from Ops Center: <a href="/static/hvCollect.zip">hvCollect.zip</a>.</li>
+            <li>Unzip it on the server which is able to access Ops Center through the ports 20961 and 8443.</li>
+            <li>Edit conf/hvConf.json file and define Ops Centers.</li>
+            <li>Install python requirements:
+                <ul>pip intsall -r hvCollectReq.txt</ul>
+            </li>
+            <li>Run hvCollect.
+                <ul>python hvCollect [-help] [-version] [-day <DAY>] [-month <MONTH>] [-year <YEAR>]</ul>
+            </li>
+            <li>It will create the report with name hv.[date].zip under same directory.</li>
+	    <li>Copy it to your local folder</li>
+	    <li>Open hvReport</li>
+            <li>Click "New Storage" button, browse and select the report, click "Upload report" button to upload the data.</li>
+        </ul>
+    	</span>
+</div>
+{% endblock %}

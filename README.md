@@ -1,2 +1,3 @@
-# hitachiReport
-Reporting toll for Hitachi Storages
+# hvReport 0.1.0
+
+Reporting tool for Hitachi Enterprise Storages

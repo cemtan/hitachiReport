@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<link rel="stylesheet" href="/static/css/ion.rangeSlider.min.css"/>
+<script src="/static/ion.rangeSlider.min.js"></script>
+<div class="sidebar">
+    <div>
+        <table cellspacing="0" cellpadding="0" style="border-collapse: collapse;">
+            <tr style="border-bottom: 1px solid #d6d3d3;">
+                <td class="tabletite" style="width:130px;color: chocolate;"><h7><b>SystemId</b></h7></td>
+                <td class="tabletite" style="width:290px;"><h7>{{ storage['storageSystemId'] }}</h7></td>
+            </tr>
+            <tr style="border-bottom: 1px solid #fcf6f6;">
+                <td class="tabletite" style="width:130px;color: chocolate;"><h7><b>Model</b></h7></td>
+                <td class="tabletite" style="width:290px;"><h7>{{ storage['model'] }}</h7></td>
+            </tr>
+            <tr style="border-bottom: 1px solid #fcf6f6;">
+                <td class="tabletite" style="width:130px;color: chocolate;"><h7><b>Creation Date</b></h7></td>
+                <td class="tabletite" style="width:290px;"><h7>{{ storage['date'] }}</h7></td>
+            </tr>
+        </table>
+    </div>
+    <br />
+    <div style="width: 90%;">
+    <form name="formSlider" action="{{ url_for('post', storageSystemId=storage['storageSystemId']) }}" method="POST">
+    <input id="dateSlider" type="hidden" name="dateSlider" value="" class="irs-hidden-input" tabindex="-1" readonly="">
+    <script>
+      function tsToDate (ts) {
+          var d = new Date(ts);
+      
+          return d.toLocaleDateString({
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+          });
+      }
+      
+      $("#dateSlider").ionRangeSlider({
+          skin: "modern",
+          prettify: tsToDate,
+          type: "double",
+          grid: true,
+          from: {{ values }}.indexOf({{ start }}),
+          to: {{ values }}.indexOf({{ end }}),
+          values: {{ values }},
+          drag_interval: true,
+          onFinish: function(data) {
+            document.formSlider.submit();;
+            }
+      });
+    </script>
+    </form>
+    </div>
+    <br />
+    <div>
+        <a style="color: chocolate;" >METRICS</a>
+    </div>
+    <br>
+    <div>
+        <table cellspacing="0" cellpadding="0" style="border-collapse: collapse;">
+        {% for title in adtitles %}
+            {% if title|length %}
+                <tr style="border-bottom: 1px solid #fcf6f6;">
+                    <td class="tabletite" style="width:4200px;"><h7><a href="#administrator-{{ loop.index }}">{{ title }}</a></h7></td>
+                </tr>
+            {% endif %}
+        {% endfor %}
+        {% for title in dvtitles %}
+            {% if title|length %}
+                <tr style="border-bottom: 1px solid #fcf6f6;">
+                    <td class="tabletite" style="width:4200px;"><h7><a href="#analyzer-{{ loop.index }}">{{ title }}</a></h7></td>
+                </tr>
+            {% endif %}
+        {% endfor %}
+        </table>
+    </div>
+</div>
+<div class="mainplot">
+    <script src="/static/vega@5"></script>
+    <script src="/static/vega-lite@5"></script>
+    <script src="/static/vega-embed@6"></script>
+    {% for table in tables %}
+    {% set title = adtitles[loop.index - 1] %}
+    <p class="title" id="administrator-{{ loop.index }}">{{ title }}</p>
+    <div id="table-{{ loop.index }}">
+        {{ table|safe }}
+    </div>
+    <br><br><br>
+    {% endfor %}
+    {% for chart in charts %}
+    {% set title = dvtitles[loop.index - 1] %}
+    <p class="title" id="analyzer-{{ loop.index }}">{{ title }}</p>
+    <div id="plot-{{ loop.index }}">
+        <script>
+          // embed when document is loaded, to ensure vega library is available
+          // this works on all modern browsers, except IE8 and older
+          document.addEventListener("DOMContentLoaded", function(event) {
+              var spec = {{ chart | safe}};
+              var opt = {
+                "mode": "vega-lite",
+                "renderer": "canvas",
+                "actions": {"editor": true, "source": true, "export": true}
+              };
+              vegaEmbed('#plot-{{ loop.index }}', spec, opt).catch(console.err);
+          });
+        </script>
+    </div>
+    <br><br><br>
+    {% endfor %}
+</div>
+{% endblock %}
