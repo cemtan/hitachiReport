@@ -227,7 +227,9 @@
                             "columnsStr":
                                 [
                                     "storageSystemId",
-                                    "date"
+                                    "date",
+                                    "storagePoolId",
+                                    "label"
                                 ]
                         }
                     },
@@ -248,7 +250,9 @@
                                 "columnsStr":
                                     [
                                         "storageSystemId",
-                                        "date"
+                                        "date",
+                                        "storagePoolId",
+                                        "label"
                                     ]
                             }
                         },
@@ -267,7 +271,9 @@
                                     "columnsStr":
                                         [
                                             "storageSystemId",
-                                            "date"
+                                            "date",
+                                            "storagePoolId",
+                                            "label"
                                         ]
                                 }
                             },
@@ -285,7 +291,9 @@
                                     "columnsStr":
                                         [
                                             "storageSystemId",
-                                            "date"
+                                            "date",
+                                            "storagePoolId",
+                                            "label"
                                         ]
                                 }
                             }
