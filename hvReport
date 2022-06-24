@@ -326,16 +326,16 @@ def post(storageSystemId):
                         adTitles.append('')
                     #print(stplotdf)
                     if sData['table'] == 'hvParityGroups':
-                        stTable = plotdf.style.set_table_styles([
+                        stTable = plotdf.sort_values(by=['parityGroupId']).style.set_table_styles([
                                 {"selector": "table", "props": "border:1px solid lightgray; width:100%"},
-                                {"selector": "tr", "props": "line-height: 18px; border:1px solid lightgray; text-align: left; "},
-                                {"selector": "td,th", "props": "line-height: inherit; padding: 0; text-align: left; border:1px solid lightgray;"}]).hide(axis='index').to_html().replace('\n', '')
+                                {"selector": "tr", "props": "line-height: 20px; border:1px solid lightgray; text-align: left; "},
+                                {"selector": "td,th", "props": "line-height: inherit; padding: 1px 20px 1px 0; text-align: left; border:1px solid lightgray;"}]).hide(axis='index').to_html().replace('\n', '')
                     else:
                         plotdf.set_index('storageSystemId',inplace=True)
                         stTable = plotdf.transpose().style.set_table_styles([
                                 {"selector": "table", "props": "border:1px solid lightgray; width:100%"},
-                                {"selector": "tr", "props": "line-height: 18px; border:1px solid lightgray; text-align: left; "},
-                                {"selector": "td,th", "props": "line-height: inherit; padding: 0; text-align: left; border:1px solid lightgray;"}]).to_html().replace('\n', '')
+                                {"selector": "tr", "props": "line-height: 20px; border:1px solid lightgray; text-align: left; "},
+                                {"selector": "td,th", "props": "line-height: inherit; padding: 1px 20px 1px 0; text-align: left; border:1px solid lightgray;"}]).to_html().replace('\n', '')
                     tables.append(stTable)
                     #df.set_index('storageSystemId',inplace=True)
                     #df.transpose().style.set_table_styles().to_html()
