@@ -23,16 +23,12 @@ def initializeDb ():
         for sData in hvData:
             for sTable in sData['data']:
                 print('Creating table "{}{}" on database hv.db'.format(sData['table'], sTable['id']))
-                editedColStr = [i.split('.', -2)[0] for i in sTable['parameter']['columnsStr']]
+                editedColStr, editedColFloat = splitAdministratorData(sTable['parameter']['columnsStr'], sTable['parameter']['columnsFloat'])
                 columnsStr = '" TEXT, "'.join(map(str, editedColStr))
                 columnsStr = '"{}" TEXT'.format(columnsStr)
-                columnsFloat = ''
-                for item in sTable['parameter']['columnsFloat']:
-                    if 'InBytes' in item: item = item.split('InBytes')[0]
-                    if '.' in item: item = item.split('.')[-2]
-                    columnsFloat = columnsFloat + ', "' + item + '" REAL'
-                if columnsFloat: 
-                    columns = columnsStr + columnsFloat
+                if editedColFloat: 
+                    columnsFloat = '" REAL, "'.join(map(str, editedColFloat))
+                    columns = columnsStr + ', ' + columnsFloat + ' REAL'
                 else:
                     columns = columnsStr
                 sqlCommand = 'CREATE TABLE "{}{}"({})'.format(sData['table'], sTable['id'], columns)
@@ -61,13 +57,8 @@ def updateDb (hvStList, hvUploadDir):
                     hvTable = sData['table'] + sTable['id']
                     if os.path.exists('{}/{}'.format(hvPath, hvFile)):
                         hvdf = pd.read_csv('{}/{}'.format(hvPath, hvFile), sep=" ", header=None)
-                        columnsStr = [i.split('.', -2)[0] for i in sTable['parameter']['columnsStr']]
+                        columnsStr, columnsFloat = splitAdministratorData(sTable['parameter']['columnsStr'], sTable['parameter']['columnsFloat'])
                         columns = columnsStr
-                        columnsFloat = []
-                        for item in sTable['parameter']['columnsFloat']:
-                            if 'InBytes' in item: item = item.split('InBytes')[0]
-                            if '.' in item: item = item.split('.')[-2]
-                            columnsFloat.append(item)
                         if columnsFloat: columns.extend(columnsFloat)
                         hvdf.columns = columns
                         hvdf[columnsStr] = hvdf[columnsStr].astype(str)
@@ -117,6 +108,11 @@ def emptyDb (storageSystemId=None):
         if (hvCon):
             hvCon.close()
 
+def getDbConnection():
+    conn = sqlite3.connect('data/db/hv.db')
+    conn.row_factory = sqlite3.Row
+    return conn
+
 def deleteJson ():
     now = time.time()
     for f in os.listdir('static/json'):
@@ -125,11 +121,6 @@ def deleteJson ():
           os.remove('static/json/{}'.format(f))
     threading.Timer(300, deleteJson).start()
 
-def getDbConnection():
-    conn = sqlite3.connect('data/db/hv.db')
-    conn.row_factory = sqlite3.Row
-    return conn
-
 def getStorage(storageSystemId):
     conn = getDbConnection()
     storage = conn.execute('SELECT * FROM hvStorages1 WHERE storageSystemId = {} ORDER BY storageSystemId DESC LIMIT 1'.format(storageSystemId)).fetchone()
@@ -137,6 +128,55 @@ def getStorage(storageSystemId):
     if storage is None:
         abort(404)
     return storage
+
+def splitAdministratorData(columnsStr, columnsFloat):
+    editedColStr = [i.split('.', -2)[0] for i in columnsStr]
+    editedColFloat = []
+    for item in columnsFloat:
+        if 'InBytes' in item: item = item.split('InBytes')[0]
+        if '.' in item: item = item.split('.')[-2]
+        editedColFloat.append(item)
+    return editedColStr, editedColFloat
+
+def getBar(source, hvDev, title):
+    if '(GB)' in title:
+        dx = 20
+    else:
+        dx = 10
+    if hvDev:
+        base = alt.Chart(source, title=title).encode(
+            x='value:Q',
+            y='metric:O',
+            color='metric:N',
+        )
+
+        myplot = alt.layer(
+            base.mark_bar(),
+            base.mark_text(dx=dx).encode(text='value')
+        ).properties(
+            width=600,
+            height=150,
+        ).facet(
+            row='{}:N'.format(hvDev),
+        )
+    else:
+        base = alt.Chart(source, title=title).mark_bar().encode(
+            x='value:Q',
+            y="metric:O"
+        )
+        text = base.mark_text(
+            align='left',
+            baseline='middle',
+            dx=3  
+        ).encode(
+            text='value:Q',
+        )
+        myplot = (base + text).properties(
+            width=700,
+            height=200,
+        )
+    return myplot
+
 
 def getPlot(source, hvDev, init, title):
     label = alt.selection(type='single', nearest=True, on='mouseover',
@@ -147,7 +187,7 @@ def getPlot(source, hvDev, init, title):
     if hvDev:
         selectBox = alt.binding_select(options=list(source[hvDev].unique()), name='{}  '.format(hvDev))
         drop = alt.selection_single(name='Select', fields=[hvDev], bind=selectBox, init={hvDev: init})
-        base = alt.Chart(source, title='{}'.format(title)).mark_line(interpolate='basis').encode(
+        base = alt.Chart(source, title=title).mark_line(interpolate='basis').encode(
             x = 'date:T',
             y = 'value:Q',
             color='variable:N',
@@ -182,7 +222,7 @@ def getPlot(source, hvDev, init, title):
         ).properties(
             width=800,
             height=300,
-            description="{}".format(title)
+            description=title
         )
     else:
         base = alt.Chart(source, title=title).mark_line(interpolate='basis').encode(
@@ -218,7 +258,7 @@ def getPlot(source, hvDev, init, title):
         ).properties(
             width=800,
             height=300,
-            description="{}".format(title)
+            description=title
         )
     return myplot
 
@@ -316,7 +356,7 @@ def post(storageSystemId):
         for sTable in sData['data']:
             dbTable = sData['table'] + sTable['id']
             plotdf = pd.read_sql_query('SELECT * FROM "{}" where storageSystemId="{}" ORDER by date'.format(dbTable, storageSystemId), conn)
-            if sData['type'] == 'administrator':
+            if sData['type'] == 'administrator' and sTable['type'] == 'table':
                 if not plotdf.empty:
                     lastDate = plotdf['date'].iloc[-1]
                     plotdf = plotdf[plotdf.date.isin([lastDate])].reset_index(drop=True)
@@ -324,7 +364,6 @@ def post(storageSystemId):
                         adTitles.append(sTable['title'])
                     else:
                         adTitles.append('')
-                    #print(stplotdf)
                     if sData['table'] == 'hvParityGroups':
                         stTable = plotdf.sort_values(by=['parityGroupId']).style.set_table_styles([
                                 {"selector": "table", "props": "border:1px solid lightgray; width:100%"},
@@ -339,30 +378,42 @@ def post(storageSystemId):
                     tables.append(stTable)
                     #df.set_index('storageSystemId',inplace=True)
                     #df.transpose().style.set_table_styles().to_html()
-            elif sData['type'] == 'analyzer':
-                print('Creating table "{}{}" on database hv.db'.format(sData['table'], sTable['id']))
+            elif sData['type'] == 'analyzer' or sTable['type'] == 'plot':
                 if not plotdf.empty:
                     if not sTable['title'] in dvTitles:
                         dvTitles.append(sTable['title'])
                     else:
                         dvTitles.append('')
-                    plotdf['date'] = pd.to_datetime(plotdf['date'])
+                    if sData['type'] == 'analyzer':
+                        plotdf['date'] = pd.to_datetime(plotdf['date'])
 
-                    if len(sTable['parameter']['columnsStr']) > 2:
-                        plotdf = plotdf.sort_values([sTable['parameter']['columnsStr'][2], "date"])
-                        plotdf = pd.melt(plotdf, id_vars =sTable['parameter']['columnsStr'], value_vars = sTable['parameter']['columnsFloat'])
-                        hvInit = plotdf.sort_values(sTable['parameter']['columnsStr'][2])[sTable['parameter']['columnsStr'][2]].unique()[0]
-                        hvDev = sTable['parameter']['columnsStr'][2]
+                        if len(sTable['parameter']['columnsStr']) > 2:
+                            plotdf = plotdf.sort_values([sTable['parameter']['columnsStr'][2], "date"])
+                            plotdf = pd.melt(plotdf, id_vars =sTable['parameter']['columnsStr'], value_vars = sTable['parameter']['columnsFloat'])
+                            hvInit = plotdf.sort_values(sTable['parameter']['columnsStr'][2])[sTable['parameter']['columnsStr'][2]].unique()[0]
+                            hvDev = sTable['parameter']['columnsStr'][2]
+                        else:
+                            plotdf = pd.melt(plotdf, id_vars =sTable['parameter']['columnsStr'], value_vars = sTable['parameter']['columnsFloat'])
+                            hvDev = None
+            
+                        mask = (plotdf['date'] > sDate) & (plotdf['date'] <= eDate)
+                        plotdf = plotdf.loc[mask]
+                        chart = getPlot(plotdf, hvDev, hvInit, sTable['title'])
+                        chart = chart.to_json().replace("\n", "").replace("\t","")
+                        charts.append(chart)
                     else:
-                        plotdf = pd.melt(plotdf, id_vars =sTable['parameter']['columnsStr'], value_vars = sTable['parameter']['columnsFloat'])
-                        hvDev = None
+                        adminColStr, adminColFloat = splitAdministratorData(sTable['parameter']['columnsStr'], sTable['parameter']['columnsFloat'])
+                        if '(GB)' in sTable['title']:
+                            plotdf[adminColFloat] = plotdf[adminColFloat].astype(int)
+                        plotdf = pd.melt(plotdf, id_vars = adminColStr, value_vars = adminColFloat)
+                        plotdf = plotdf.rename(columns = {'variable':'metric'})
+                        if len(adminColStr) > 2:
+                            chart = getBar(plotdf, adminColStr[2], sTable['title'])
+                        else:
+                            chart = getBar(plotdf, None, sTable['title'])
+                        chart = chart.to_json().replace("\n", "").replace("\t","")
+                        charts.append(chart)
         
-                    mask = (plotdf['date'] > sDate) & (plotdf['date'] <= eDate)
-                    plotdf = plotdf.loc[mask]
-                    chart = getPlot(plotdf, hvDev, hvInit, sTable['title'], )
-                    chart = chart.to_json().replace("\n", "").replace("\t","")
-                    charts.append(chart)
-    
     conn.close()
     return render_template('post.html', storage=storage, values=values, start=startDate, end=endDate, charts=charts, dvtitles=dvTitles, tables=tables, adtitles=adTitles)
 

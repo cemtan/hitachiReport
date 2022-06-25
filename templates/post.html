@@ -2,6 +2,8 @@
 
 {% block content %}
 <link rel="stylesheet" href="/static/css/ion.rangeSlider.min.css"/>
+<link rel="stylesheet" href="/static/css/bootstrap.min.css"/>
+
 <script src="/static/ion.rangeSlider.min.js"></script>
 <div class="sidebar">
     <div>
@@ -82,7 +84,7 @@
     {% for table in tables %}
     {% set title = adtitles[loop.index - 1] %}
     <p class="title" id="administrator-{{ loop.index }}">{{ title }}</p>
-    <div id="table-{{ loop.index }}">
+    <div class="table-responsive" id="table-{{ loop.index }}">
         {{ table|safe }}
     </div>
     <br><br><br>

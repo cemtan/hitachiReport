@@ -10,6 +10,7 @@
                 {
                 "id": "1",
                 "title": "Storage Information",
+                "type": "table",
                 "parameter":
                     {
                         "columnsFloat": 
@@ -32,6 +33,7 @@
                 {
                     "id": "2",
                     "title": "Storage Capacity (GB)",
+                    "type": "plot",
                     "parameter":
                         {
                             "columnsFloat": 
@@ -55,6 +57,7 @@
                     {
                         "id": "3",
                         "title": "Total Storage Efficiency (%)",
+                        "type": "plot",
                         "parameter":
                             {
                                 "columnsFloat": 
@@ -76,6 +79,7 @@
                         {
                         "id": "4",
                         "title": "Storage Software Saving Efficiency (%)",
+                        "type": "plot",
                         "parameter":
                             {
                                 "columnsFloat": 
@@ -95,6 +99,7 @@
                         {
                         "id": "5",
                         "title": "Storage FMD Saving Efficiency (%)",
+                        "type": "plot",
                         "parameter":
                             {
                                 "columnsFloat": 
@@ -123,6 +128,7 @@
                 {
                 "id": "1",
                 "title": "Storage Health",
+                "type": "table",
                 "parameter":
                     {
                         "columnsFloat": 
@@ -156,6 +162,7 @@
                 {
                 "id": "1",
                 "title": "Parity Groups",
+                "type": "table",
                 "parameter":
                     {
                         "columnsFloat": 
@@ -187,6 +194,7 @@
                 {
                 "id": "1",
                 "title": "Pool Overview",
+                "type": "table",
                 "parameter":
                     {
                         "columnsFloat": 
@@ -211,6 +219,7 @@
                 {
                     "id": "2",
                     "title": "Pool Capacity (GB)",
+                    "type": "plot",
                     "parameter":
                         {
                             "columnsFloat": 
@@ -228,14 +237,14 @@
                                 [
                                     "storageSystemId",
                                     "date",
-                                    "storagePoolId",
-                                    "label"
+                                    "storagePoolId"
                                 ]
                         }
                     },
                     {
                         "id": "3",
                         "title": "Total Pool Efficiency (%)",
+                        "type": "plot",
                         "parameter":
                             {
                                 "columnsFloat": 
@@ -251,14 +260,14 @@
                                     [
                                         "storageSystemId",
                                         "date",
-                                        "storagePoolId",
-                                        "label"
+                                        "storagePoolId"
                                     ]
                             }
                         },
                         {
                             "id": "4",
                             "title": "Pool Software Saving Efficiency (%)",
+                            "type": "plot",
                             "parameter":
                                 {
                                     "columnsFloat": 
@@ -272,14 +281,14 @@
                                         [
                                             "storageSystemId",
                                             "date",
-                                            "storagePoolId",
-                                            "label"
+                                            "storagePoolId"
                                         ]
                                 }
                             },
                             {
                             "id": "5",
                             "title": "Pool FMD Saving Efficiency (%)",
+                            "type": "plot",
                             "parameter":
                                 {
                                     "columnsFloat": 
@@ -292,8 +301,7 @@
                                         [
                                             "storageSystemId",
                                             "date",
-                                            "storagePoolId",
-                                            "label"
+                                            "storagePoolId"
                                         ]
                                 }
                             }
@@ -310,6 +318,7 @@
                 {
                 "id": "1",
                 "title": "Protection Capacity (GB)",
+                "type": "plot",
                 "parameter":
                     {
                         "columnsFloat": 
@@ -328,6 +337,7 @@
                 {
                     "id": "2",
                     "title": "Protection Volumes (#)",
+                    "type": "plot",
                     "parameter":
                         {
                             "columnsFloat": 

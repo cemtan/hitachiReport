@@ -31,10 +31,10 @@ examples = '''examples:
   {prog} -month 2 -d 22     : Collects the data of February 2nd this year
   {prog} -m 2 -year 2022    : Collects the data of February this year
   {prog} -d 2 -m 2 -y 2022  : Collects the data of 2nd February 2022
-'''.format(prog="hvCollect")
+'''.format(prog="hvCollect.py")
 
 def parse_args(args=sys.argv[1:]):
-    parser = argparse.ArgumentParser(prog="hvCollect", description='Use the ' + "hvCollect" + ' command to collect data for reporting.', epilog=examples, formatter_class=argparse.RawDescriptionHelpFormatter, add_help=False)
+    parser = argparse.ArgumentParser(prog="hvCollect.py", description='Use the ' + "hvCollect.py" + ' command to collect data for reporting.', epilog=examples, formatter_class=argparse.RawDescriptionHelpFormatter, add_help=False)
 
     parser.add_argument('-help', '-h', action='help', default=argparse.SUPPRESS, help='Show this help message and exit.')
     parser.add_argument('-version', '-v', action='version', version='%(prog)s ' + hitachiConfig['version'], help='Show program\'s version number and exit.')

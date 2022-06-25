@@ -20,7 +20,7 @@ RUN apt-get install -y gcc libc-dev python3-dev
 COPY hvReportReq.txt requirements.txt
 RUN pip3 install -r requirements.txt
 
-COPY . /hvReport
+COPY . /hvReport.py
 
 #CMD [ "./startWeb" ]
 ENTRYPOINT ["./startWeb"]

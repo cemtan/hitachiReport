@@ -1,2 +1,2 @@
 #!/bin/bash
-uwsgi --http :5000 --wsgi-file hvReport --callable app --processes 4 --threads 2 --http-timeout 600
+uwsgi --http :5000 --wsgi-file hvReport.py --callable app --processes 4 --threads 2 --http-timeout 600
