@@ -28,7 +28,7 @@ def initializeDb ():
                 columnsStr = '"{}" TEXT'.format(columnsStr)
                 if editedColFloat: 
                     columnsFloat = '" REAL, "'.join(map(str, editedColFloat))
-                    columns = columnsStr + ', ' + columnsFloat + ' REAL'
+                    columns = columnsStr + ', "' + columnsFloat + '" REAL'
                 else:
                     columns = columnsStr
                 sqlCommand = 'CREATE TABLE "{}{}"({})'.format(sData['table'], sTable['id'], columns)
@@ -70,7 +70,6 @@ def updateDb (hvStList, hvUploadDir):
                         else:
                             groupByList = columnsStr
                         groupBy = ', '.join(map(str, groupByList))
-                        print(hvdf)
                         hvdf.to_sql(hvTable, hvCon, if_exists = 'append', index = False)
                         for storage in itemList:
                             sqlCommand = 'DELETE FROM "{}" WHERE storageSystemId = "{}" and rowid not in (SELECT min(rowid) FROM "{}" WHERE storageSystemId = "{}" GROUP BY {})'.format(hvTable, storage, hvTable, storage, groupBy)
@@ -78,18 +77,17 @@ def updateDb (hvStList, hvUploadDir):
                             hvCon.commit()
             shutil.rmtree(hvPath)
             os.remove(hvUploadDir + '/' + hvUploadFile)
+        hvList = list(dict.fromkeys(hvList))
+        if len(hvList) > 1:
+            flash('"{}" were successfully added!'.format(', '.join(hvList)))
+        else:
+            flash('"{}" was successfully added!'.format(', '.join(hvList)))
     except sqlite3.Error as error:
         flash("Error while connecting to sqlite", error)
     finally:
         if (hvCon):
             hvCur.close()
             hvCon.close()
-
-    hvList = list(dict.fromkeys(hvList))
-    if len(hvList) > 1:
-        flash('"{}" were successfully added!'.format(', '.join(hvList)))
-    else:
-        flash('"{}" was successfully added!'.format(', '.join(hvList)))
 
 def emptyDb (storageSystemId=None):
     try:
