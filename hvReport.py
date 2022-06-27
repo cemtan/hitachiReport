@@ -269,6 +269,7 @@ app.config['UPLOAD_EXTENSIONS'] = ['.zip']
 app.config['DROPZONE_UPLOAD_MULTIPLE'] = True
 app.config['SECRET_KEY'] = 'hv209@dnmduf8!23jQa'
 alt.renderers.enable('default')
+alt.data_transformers.disable_max_rows()
 #alt.data_transformers.enable('data_server')
 alt.data_transformers.register('jsonDir', jsonDir)
 alt.data_transformers.enable('jsonDir', data_dir='static/json')

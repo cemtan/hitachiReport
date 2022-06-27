@@ -368,6 +368,7 @@
                 {
                 "id": "1",
                 "title": "MP Utilization (%)",
+                "type": "monthly",
                 "parameter":
                     {
                         "columnsFloat": 
@@ -395,6 +396,7 @@
                 {
                 "id": "1",
                 "title": "MPB Utilization (%)",
+                "type": "daily",
                 "parameter":
                     {
                         "columnsFloat": 
@@ -423,6 +425,7 @@
                 {
                 "id": "1",
                 "title": "IOPS",
+                "type": "monthly",
                 "parameter":
                     {
                         "columnsFloat": 
@@ -456,6 +459,7 @@
                 {
                 "id": "1",
                 "title": "Transfer Rate (KB/s)",
+                "type": "monthly",
                 "parameter":
                     {
                         "columnsFloat": 
@@ -489,6 +493,7 @@
                 {
                 "id": "1",
                 "title": "Response Time (msec)",
+                "type": "monthly",
                 "parameter":
                     {
                         "columnsFloat": 
@@ -518,6 +523,7 @@
                 {
                 "id": "1",
                 "title": "Cache Information (%)",
+                "type": "monthly",
                 "parameter":
                     {
                         "columnsFloat": 
@@ -546,6 +552,7 @@
                 {
                 "id": "1",
                 "title": "Block Size (KB/IO)",
+                "type": "monthly",
                 "parameter":
                     {
                         "columnsFloat": 
@@ -574,6 +581,7 @@
                 {
                 "id": "1",
                 "title": "Block Size (KB/IO)",
+                "type": "none",
                 "parameter":
                     {
                         "columnsFloat": 
@@ -603,6 +611,7 @@
                 {
                 "id": "1",
                 "title": "Port Response Time (msec)",
+                "type": "none",
                 "parameter":
                     {
                         "columnsFloat": 
