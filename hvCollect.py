@@ -342,7 +342,7 @@ if __name__ == "__main__":
             hitachiConfig = json.load(confFile)
         confFile.close()
     except:
-        print(style('!!!').failed() + ' hitachiData.json or hitachiConf.json file cannot be opened!')
+        print(style('!!!').failed() + ' hvData.json or hvConf.json file cannot be opened!')
         raise SystemExit()
 
     requests.packages.urllib3.disable_warnings()
