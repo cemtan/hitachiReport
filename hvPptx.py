@@ -76,6 +76,69 @@ def splitAdministratorData(columnsStr, columnsFloat):
         editedColFloat.append(item)
     return editedColStr, editedColFloat
 
+def getMaxAvgCpuRates():
+    cpusdf = pd.DataFrame()
+    cpudf = pd.read_sql_query('SELECT storageSystemId,date,utilization FROM hvMpUtilization1', conn)
+    cpudf['date'] = pd.to_datetime(cpudf['date'])
+    mask = (cpudf['date'] > sDate) & (cpudf['date'] <= eDate)
+    cpudf = cpudf.loc[mask]
+    cpudf.drop(columns=['date'],inplace=True)
+    cpusdf = cpudf.groupby('storageSystemId').max()
+    cpusdf.rename(columns = {'utilization':'max'}, inplace = True)
+    cpusdf['avg'] = cpudf.groupby('storageSystemId').mean()['utilization']
+    cpusdf['storageSystemId'] = cpusdf.index
+    cpusdf = pd.melt(cpusdf, id_vars = ['storageSystemId'], value_vars = ['max', 'avg'])
+    cpusdf['value'] = cpusdf['value'].astype(int)
+
+    base = alt.Chart(cpusdf).encode(
+        x=alt.X('variable:O', axis=alt.Axis(title='')),
+        y=alt.Y('value:Q', axis=alt.Axis(title='Utilization')),
+        color='variable:N',
+    )
+    myplot = alt.layer(
+        base.mark_bar(),
+        base.mark_text(dy=-10, align='center',).encode(text='value'),
+        
+    ).properties(
+        width=50,
+        height=150,
+    ).facet(
+        column='storageSystemId:N',
+    )
+    return myplot
+
+
+def getAllPoolRates():
+    poolsdf = pd.DataFrame()
+    for storageSystemId in storages:
+        pooldf = pd.read_sql_query('SELECT storageSystemId,date,storagePoolId,usedCapacity,capacity FROM hvPools2 where storageSystemId="{}" ORDER by date'.format(storageSystemId), conn)
+        lDate = pooldf['date'].iloc[-1]
+        pooldf = pooldf[pooldf.date.isin([lDate])].reset_index(drop=True)
+        if poolsdf.empty:
+            poolsdf = pooldf
+        else:
+            poolsdf = pd.concat([poolsdf, pooldf], ignore_index=True)
+            
+    poolsdf['usageRate'] = poolsdf['usedCapacity'] * 100 / poolsdf['capacity']
+    pooldf = poolsdf[['storageSystemId', 'storagePoolId', 'usageRate']]
+    pooldf['usageRate'] = pooldf['usageRate'].astype(int)
+
+    base = alt.Chart(pooldf).encode(
+        x=alt.X('storagePoolId:O', axis=alt.Axis(title='Id')),
+        y=alt.Y('usageRate:Q', axis=alt.Axis(title='Percentage')),
+        color='storagePoolId:N',
+    )
+    myplot = alt.layer(
+        base.mark_bar(),
+        base.mark_text(dy=-10, align='center',).encode(text='usageRate')
+    ).properties(
+        width=50,
+        height=150,
+    ).facet(
+        column='storageSystemId:N'
+    )
+    return myplot
+
 def getBar(source, hvDev, title):
     if '(GB)' in title:
         dx = 20
@@ -206,6 +269,22 @@ if __name__ == "__main__":
                     plotdf.drop(columns=['date'], inplace=True)
                     df_to_table(slide, plotdf, left, top, width, height)
     
+    for customTitle in ['Pool Usage Rate (%)', 'Average / Maximum Cpu Utilization Rate (%)']:
+        if customTitle == 'Pool Usage Rate (%)':
+            chart = getAllPoolRates()
+            fileName = 'hvAllPoolRates1'
+        elif customTitle == 'Average / Maximum Cpu Utilization Rate (%)':
+            chart = getMaxAvgCpuRates()
+            fileName = 'hvMaxAvgCpuRates'
+        if chart:
+            save(chart, 'data/tmp/{}.png'.format(fileName))
+            imgResize('data/tmp/{}.png'.format(fileName))
+            slide = prs.slides.add_slide(prs.slide_layouts[3])
+            title = slide.shapes.title
+            title.text = customTitle
+            placeholder = slide.placeholders[1]
+            placeholder.insert_picture('data/tmp/{}.png'.format(fileName, storageSystemId))
+
     for sData in hitachiData:
         for sTable in sData['data']:
             dbTable = sData['table'] + sTable['id']
