@@ -1,0 +1,6 @@
+db-sqlite3
+altair
+altair_saver
+pandas
+python-pptx
+selenium==4.2.0

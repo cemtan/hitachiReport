@@ -355,8 +355,8 @@ def post(storageSystemId):
         for sTable in sData['data']:
             dbTable = sData['table'] + sTable['id']
             plotdf = pd.read_sql_query('SELECT * FROM "{}" where storageSystemId="{}" ORDER by date'.format(dbTable, storageSystemId), conn)
-            if sData['type'] == 'administrator' and sTable['type'] == 'table':
-                if not plotdf.empty:
+            if not plotdf.empty:
+                if sData['type'] == 'administrator' and sTable['type'] == 'table':
                     lastDate = plotdf['date'].iloc[-1]
                     plotdf = plotdf[plotdf.date.isin([lastDate])].reset_index(drop=True)
                     if not sTable['title'] in adTitles:
@@ -377,8 +377,7 @@ def post(storageSystemId):
                     tables.append(stTable)
                     #df.set_index('storageSystemId',inplace=True)
                     #df.transpose().style.set_table_styles().to_html()
-            elif sData['type'] == 'analyzer' or sTable['type'] == 'plot':
-                if not plotdf.empty:
+                elif sData['type'] == 'analyzer' or sTable['type'] == 'plot':
                     if not sTable['title'] in dvTitles:
                         dvTitles.append(sTable['title'])
                     else:
