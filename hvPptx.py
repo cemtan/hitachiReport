@@ -119,7 +119,7 @@ def getPlot(source, title, columnStr, columnFloat):
     if len(columnStr) > 2:
         colorize = columnStr[2]
     else:
-        colorize = columnFloat[0]
+        colorize = 'variable'
     myplot = alt.Chart(source, title=title).mark_line(interpolate='basis').encode(
         x = 'date:T',
         y = 'value:Q',
@@ -213,6 +213,7 @@ if __name__ == "__main__":
             if sData['type'] == 'analyzer' or sTable['type'] == 'plot':
                 for storageSystemId in storages:
                     plotdf = pd.read_sql_query('SELECT * FROM "{}" where storageSystemId="{}" ORDER by date'.format(dbTable, storageSystemId), conn)
+                    chart = ''
                     if sData['type'] == 'analyzer':
                         if sTable['type'] != 'none':
                             if sTable['type'] == 'monthly' or (sTable['type'] == 'daily' and args.day is not None):
@@ -235,13 +236,14 @@ if __name__ == "__main__":
                             chart = getBar(plotdf, None, sTable['title'])
                         totalTitle = storageSystemId + ': ' + sTable['title']
 
-                    save(chart, 'data/tmp/{}-{}.png'.format(dbTable, storageSystemId))
-                    imgResize('data/tmp/{}-{}.png'.format(dbTable, storageSystemId))
-                    slide = prs.slides.add_slide(prs.slide_layouts[3])
-                    title = slide.shapes.title
-                    title.text = totalTitle
-                    placeholder = slide.placeholders[1]
-                    placeholder.insert_picture('data/tmp/{}-{}.png'.format(dbTable, storageSystemId))
+                    if chart:
+                        save(chart, 'data/tmp/{}-{}.png'.format(dbTable, storageSystemId))
+                        imgResize('data/tmp/{}-{}.png'.format(dbTable, storageSystemId))
+                        slide = prs.slides.add_slide(prs.slide_layouts[3])
+                        title = slide.shapes.title
+                        title.text = totalTitle
+                        placeholder = slide.placeholders[1]
+                        placeholder.insert_picture('data/tmp/{}-{}.png'.format(dbTable, storageSystemId))
                         
 
 
