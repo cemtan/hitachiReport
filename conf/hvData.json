@@ -424,7 +424,7 @@
             [
                 {
                 "id": "1",
-                "title": "IOPS",
+                "title": "Storage IOPS (K)",
                 "type": "monthly",
                 "parameter":
                     {
