@@ -143,6 +143,12 @@ def discard_session(f_url, f_verify, f_auth):
 
 # ### Helpers ########################################### #
 
+def writeToFile(f_df, f_file):
+    if os.path.isfile(f_file):
+        f_df.to_csv(f_file, mode='a', sep=' ', header=False, index=False)
+    else:
+        f_df.to_csv(f_file, sep=' ', header=False, index=False)
+
 def get_auth(f_user, f_password):
     f_up = "{}:{}".format(f_user, f_password)
     f_auth = base64.b64encode(f_up.encode()).decode()
@@ -250,7 +256,9 @@ def get_administrator_dataframe(f_data, f_ops):
                     else:
                         r_df[k] = -1
                     r_df[k] = r_df[k].astype(str).str.replace('nan', '-1', regex=True).astype(float)
-                if not r_df.empty: r_df.to_csv(reportDir + '/' + f_data['table'] + '.' + j_item['id'], sep=' ', header=False, index=False)
+                if not r_df.empty: 
+                    r_file = reportDir + '/' + f_data['table'] + '.' + j_item['id']
+                    writeToFile(r_df, r_file)
     
     files = os.listdir(reportDir)
     num_of_items = sum(f_data['table'] in s for s in files)
@@ -319,7 +327,8 @@ def get_analyzer_dataframe(f_data, f_ops):
                 for k_item in j_item['parameter']['columnsFloat']:
                     r_df[k_item] = r_df[k_item].replace(np.nan, -1)
                 r_df = r_df.sort_values(by=j_item['parameter']['columnsStr'])
-                r_df.to_csv(reportDir + '/' + f_data['table'] + '.' + j_item['id'], sep=' ', header=False, index=False)
+                r_file = reportDir + '/' + f_data['table'] + '.' + j_item['id']
+                writeToFile(r_df, r_file)
 
     files = os.listdir(reportDir)
     num_of_items = sum(f_data['table'] in s for s in files)
