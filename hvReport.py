@@ -297,7 +297,7 @@ def index(sort='storageSystemId'):
         sort = request.args['sort']
         request.args.clear
     conn = getDbConnection()
-    storages = conn.execute('SELECT storageSystemId, model, max(date) as latest FROM "hvStorages1" group by storageSystemId ORDER by {}'.format(sort)).fetchall()
+    storages = conn.execute('SELECT storageSystemId, model, date, max(date) as latest FROM "hvStorages1" group by storageSystemId ORDER by {}'.format(sort)).fetchall()
     conn.close()
     return render_template('index.html', storages=storages)
     
