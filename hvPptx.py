@@ -1,3 +1,4 @@
+from curses.ascii import SP
 import json
 import os, sys
 import argparse
@@ -31,6 +32,7 @@ def parse_args(args=sys.argv[1:]):
     parser.add_argument('-version', '-v', action='version', version='%(prog)s ' + hitachiConfig['version'], help='Show program\'s version number and exit.')
 
     group_main = parser.add_argument_group("usage")
+    group_main.add_argument('-long', '-l', action='store_true', help='(Optional) Get long report.')
     group_main.add_argument('-day', '-d', type=int, metavar='<DAY>', help='(Optional) Specify the day of the data you want to report.')
     group_main.add_argument('-month', '-m', type=int, metavar='<MONTH>', help='(Optional) Specify the month of the data you want to report.')
     group_main.add_argument('-year', '-y', type=int, metavar='<YEAR>', help='(Optional) Specify the year of the data you want to report.')
@@ -43,7 +45,7 @@ def check_parse_args(parser):
 def get_date():
     today = datetime.today()
     first = today.replace(day=1)
-    if not len(sys.argv) > 1:      
+    if not len(sys.argv) > 1 or (args.long is not None and not len(sys.argv) > 2):      
         f_edate = first - timedelta(days=1)
         f_edate = f_edate.replace(hour=23).replace(minute=59).replace(second=59)
         f_sdate = f_edate.replace(day=1).replace(hour=00).replace(minute=00).replace(second=00)
@@ -76,67 +78,47 @@ def splitAdministratorData(columnsStr, columnsFloat):
         editedColFloat.append(item)
     return editedColStr, editedColFloat
 
-def getMaxAvgCpuRates():
-    cpusdf = pd.DataFrame()
-    cpudf = pd.read_sql_query('SELECT storageSystemId,date,utilization FROM hvMpUtilization1', conn)
-    cpudf['date'] = pd.to_datetime(cpudf['date'])
-    mask = (cpudf['date'] > sDate) & (cpudf['date'] <= eDate)
-    cpudf = cpudf.loc[mask]
-    cpudf.drop(columns=['date'],inplace=True)
-    cpusdf = cpudf.groupby('storageSystemId').max()
-    cpusdf.rename(columns = {'utilization':'max'}, inplace = True)
-    cpusdf['avg'] = cpudf.groupby('storageSystemId').mean()['utilization']
-    cpusdf['storageSystemId'] = cpusdf.index
-    cpusdf = pd.melt(cpusdf, id_vars = ['storageSystemId'], value_vars = ['max', 'avg'])
-    cpusdf['value'] = cpusdf['value'].astype(int)
+def getDataFrame(source, fProc):
+    source['date'] = pd.to_datetime(source['date'])
+    mask = (source['date'] > sDate) & (source['date'] <= eDate)
+    source = source.loc[mask]
+    source = source[source[fProc['parameter']] != -1]
+    maxdf = eval(fProc['melt']['max'])
+    avgdf = eval(fProc['melt']['avg'])
+    idVars = eval(fProc['melt']['max'][fProc['melt']['max'].find("(")+1:fProc['melt']['max'].find(")")])
+    source = maxdf.merge(avgdf, how = 'inner', on = idVars)
+    source = pd.melt(source, id_vars = idVars, value_vars = ['max', 'avg'])
+    source['value'] = source['value'].round().astype(int)
+    return source
 
-    base = alt.Chart(cpusdf).encode(
-        x=alt.X('variable:O', axis=alt.Axis(title='')),
-        y=alt.Y('value:Q', axis=alt.Axis(title='Utilization')),
-        color='variable:N',
+def getChart(source, fProc):
+    if fProc['column'] == 'port':
+        singleWidth = 10
+    else:
+        singleWidth = 50
+    base = alt.Chart(source).encode(
+        x=alt.X('{}:O'.format(fProc['x']), axis=alt.Axis(labels=False, title= None, ticks=False)),
+        y=alt.Y('{}:Q'.format(fProc['y']), axis=alt.Axis(title=fProc['ytitle'])),
+        color='{}:N'.format(fProc['x']),
     )
-    myplot = alt.layer(
+
+    basePlot = alt.layer(
         base.mark_bar(),
-        base.mark_text(dy=-10, align='center',).encode(text='value'),
-        
+        base.mark_text(dy=-10, align='center',).encode(text=fProc['y']),
     ).properties(
-        width=50,
+        width=singleWidth,
         height=150,
-    ).facet(
-        column='storageSystemId:N',
     )
-    return myplot
 
+    if len(source[fProc['column']].iloc[-1]) < 8:
+        myplot = basePlot.facet(
+            column='{}:N'.format(fProc['column']),
+        )
+    else:
+        myplot = basePlot.facet(
+            column=alt.Column('{}:N'.format(fProc['column']), header=alt.Header(labelAngle=90, labelAlign='left'))
+        )
 
-def getAllPoolRates():
-    poolsdf = pd.DataFrame()
-    for storageSystemId in storages:
-        pooldf = pd.read_sql_query('SELECT storageSystemId,date,storagePoolId,usedCapacity,capacity FROM hvPools2 where storageSystemId="{}" ORDER by date'.format(storageSystemId), conn)
-        lDate = pooldf['date'].iloc[-1]
-        pooldf = pooldf[pooldf.date.isin([lDate])].reset_index(drop=True)
-        if poolsdf.empty:
-            poolsdf = pooldf
-        else:
-            poolsdf = pd.concat([poolsdf, pooldf], ignore_index=True)
-            
-    poolsdf['usageRate'] = poolsdf['usedCapacity'] * 100 / poolsdf['capacity']
-    pooldf = poolsdf[['storageSystemId', 'storagePoolId', 'usageRate']]
-    pooldf['usageRate'] = pooldf['usageRate'].astype(int)
-
-    base = alt.Chart(pooldf).encode(
-        x=alt.X('storagePoolId:O', axis=alt.Axis(title='Id')),
-        y=alt.Y('usageRate:Q', axis=alt.Axis(title='Percentage')),
-        color='storagePoolId:N',
-    )
-    myplot = alt.layer(
-        base.mark_bar(),
-        base.mark_text(dy=-10, align='center',).encode(text='usageRate')
-    ).properties(
-        width=50,
-        height=150,
-    ).facet(
-        column='storageSystemId:N'
-    )
     return myplot
 
 def getBar(source, hvDev, title):
@@ -223,6 +205,9 @@ if __name__ == "__main__":
         with open('conf/hvConf.json') as confFile:
             hitachiConfig = json.load(confFile)
         confFile.close()
+        with open('conf/hvProc.json') as procFile:
+            hitachiProcess = json.load(procFile)
+        confFile.close()
     except:
         print('!!! hvData.json or hvConf.json file cannot be opened!')
         raise SystemExit()
@@ -273,65 +258,93 @@ if __name__ == "__main__":
                     title = slide.shapes.title
                     title.text = sTable['title']
                     plotdf.drop(columns=['date'], inplace=True)
+                    if dbTable == 'hvParityGroups1':
+                        plotdf = plotdf.groupby(['storageSystemId','raidLevel','raidLayout','encryption','compression','diskSpec']).size().reset_index(name='Count')
                     df_to_table(slide, plotdf, left, top, width, height)
     
-    for customTitle in ['Pool Usage Rate (%)', 'Average / Maximum Cpu Utilization Rate (%)']:
-        if customTitle == 'Pool Usage Rate (%)':
-            chart = getAllPoolRates()
-            fileName = 'hvAllPoolRates1'
-        elif customTitle == 'Average / Maximum Cpu Utilization Rate (%)':
-            chart = getMaxAvgCpuRates()
-            fileName = 'hvMaxAvgCpuRates'
-        if chart:
-            save(chart, 'data/tmp/{}.png'.format(fileName))
-            imgResize('data/tmp/{}.png'.format(fileName))
-            slide = prs.slides.add_slide(prs.slide_layouts[3])
-            title = slide.shapes.title
-            title.text = customTitle
-            placeholder = slide.placeholders[1]
-            placeholder.insert_picture('data/tmp/{}.png'.format(fileName, storageSystemId))
+    for sProc in hitachiProcess:
+        chart = ''
+        if sProc['type'] != 'series':
+            plotdf = pd.read_sql_query(sProc['query'], conn)
+            if sProc['type'] == 'allofseries':
+                plotdf = getDataFrame(plotdf, sProc)
+            else:
+                valueVars = []
+                for k,v in sProc['melt'].items():
+                    if v:
+                        plotdf[k] = eval(v)
+                        plotdf[k] = plotdf[k].round().astype(int)
+                    valueVars.append(k)
+                if len(sProc['melt']) > 1:
+                    plotdf = pd.melt(plotdf, id_vars = ['storageSystemId'], value_vars = valueVars)
+            
+            if not plotdf.empty:
+                chart = getChart(plotdf, sProc)
 
-    for sData in hitachiData:
-        for sTable in sData['data']:
-            dbTable = sData['table'] + sTable['id']
-            plotdf = pd.DataFrame()
-            if sData['type'] == 'analyzer' or sTable['type'] == 'plot':
-                for storageSystemId in storages:
-                    plotdf = pd.read_sql_query('SELECT * FROM "{}" where storageSystemId="{}" ORDER by date'.format(dbTable, storageSystemId), conn)
-                    chart = ''
-                    if sData['type'] == 'analyzer':
-                        if sTable['type'] != 'none':
-                            if sTable['type'] == 'monthly' or (sTable['type'] == 'daily' and args.day is not None):
-                                plotdf['date'] = pd.to_datetime(plotdf['date'])
-                                plotdf = pd.melt(plotdf, id_vars =sTable['parameter']['columnsStr'], value_vars = sTable['parameter']['columnsFloat'])
-                    
-                                mask = (plotdf['date'] > sDate) & (plotdf['date'] <= eDate)
-                                plotdf = plotdf.loc[mask]
-                                chart = getPlot(plotdf, sTable['title'], sTable['parameter']['columnsStr'], sTable['parameter']['columnsFloat'])
-                                totalTitle = storageSystemId + ': ' + sTable['title'] + ': ' + titleDate
-                    else:
-                        adminColStr, adminColFloat = splitAdministratorData(sTable['parameter']['columnsStr'], sTable['parameter']['columnsFloat'])
-                        if '(GB)' in sTable['title']:
-                            plotdf[adminColFloat] = plotdf[adminColFloat].astype(int)
-                        plotdf = pd.melt(plotdf, id_vars = adminColStr, value_vars = adminColFloat)
-                        plotdf = plotdf.rename(columns = {'variable':'metric'})
-                        if len(adminColStr) > 2:
-                            chart = getBar(plotdf, adminColStr[2], sTable['title'])
-                        else:
-                            chart = getBar(plotdf, None, sTable['title'])
-                        totalTitle = storageSystemId + ': ' + sTable['title']
+            if chart:
+                save(chart, 'data/tmp/{}.png'.format(sProc['filename']))
+                imgResize('data/tmp/{}.png'.format(sProc['filename']))
+                slide = prs.slides.add_slide(prs.slide_layouts[3])
+                title = slide.shapes.title
+                title.text = sProc['title']
+                placeholder = slide.placeholders[1]
+                placeholder.insert_picture('data/tmp/{}.png'.format(sProc['filename']))
+        else:
+            for storageSystemId in storages:
+                chart = ''
+                plotdf = pd.read_sql_query(sProc['query'].format(storageSystemId), conn)
+                plotdf = getDataFrame(plotdf, sProc)
+                if not plotdf.empty:
+                    chart = getChart(plotdf, sProc)
+                if chart:
+                    save(chart, 'data/tmp/{}-{}.png'.format(sProc['filename'], storageSystemId))
+                    imgResize('data/tmp/{}-{}.png'.format(sProc['filename'], storageSystemId))
+                    slide = prs.slides.add_slide(prs.slide_layouts[3])
+                    title = slide.shapes.title
+                    title.text = storageSystemId + ': ' + sProc['title']
+                    placeholder = slide.placeholders[1]
+                    placeholder.insert_picture('data/tmp/{}-{}.png'.format(sProc['filename'], storageSystemId))
 
-                    if chart:
-                        save(chart, 'data/tmp/{}-{}.png'.format(dbTable, storageSystemId))
-                        imgResize('data/tmp/{}-{}.png'.format(dbTable, storageSystemId))
-                        slide = prs.slides.add_slide(prs.slide_layouts[3])
-                        title = slide.shapes.title
-                        title.text = totalTitle
-                        placeholder = slide.placeholders[1]
-                        placeholder.insert_picture('data/tmp/{}-{}.png'.format(dbTable, storageSystemId))
+    if args.long is True:
+        for sData in hitachiData:
+            for sTable in sData['data']:
+                dbTable = sData['table'] + sTable['id']
+                plotdf = pd.DataFrame()
+                if sData['type'] == 'analyzer' or sTable['type'] == 'plot':
+                    for storageSystemId in storages:
+                        plotdf = pd.read_sql_query('SELECT * FROM "{}" where storageSystemId="{}" ORDER by date'.format(dbTable, storageSystemId), conn)
+                        chart = ''
+                        if sData['type'] == 'analyzer':
+                            if sTable['type'] != 'none':
+                                if sTable['type'] == 'monthly' or (sTable['type'] == 'daily' and args.day is not None):
+                                    plotdf['date'] = pd.to_datetime(plotdf['date'])
+                                    plotdf = pd.melt(plotdf, id_vars =sTable['parameter']['columnsStr'], value_vars = sTable['parameter']['columnsFloat'])
                         
+                                    mask = (plotdf['date'] > sDate) & (plotdf['date'] <= eDate)
+                                    plotdf = plotdf.loc[mask]
+                                    chart = getPlot(plotdf, sTable['title'], sTable['parameter']['columnsStr'], sTable['parameter']['columnsFloat'])
+                                    totalTitle = storageSystemId + ': ' + sTable['title'] + ': ' + titleDate
+                        else:
+                            adminColStr, adminColFloat = splitAdministratorData(sTable['parameter']['columnsStr'], sTable['parameter']['columnsFloat'])
+                            if '(GB)' in sTable['title']:
+                                plotdf[adminColFloat] = plotdf[adminColFloat].astype(int)
+                            plotdf = pd.melt(plotdf, id_vars = adminColStr, value_vars = adminColFloat)
+                            plotdf = plotdf.rename(columns = {'variable':'metric'})
+                            if len(adminColStr) > 2:
+                                chart = getBar(plotdf, adminColStr[2], sTable['title'])
+                            else:
+                                chart = getBar(plotdf, None, sTable['title'])
+                            totalTitle = storageSystemId + ': ' + sTable['title']
 
-
+                        if chart:
+                            save(chart, 'data/tmp/{}-{}.png'.format(dbTable, storageSystemId))
+                            imgResize('data/tmp/{}-{}.png'.format(dbTable, storageSystemId))
+                            slide = prs.slides.add_slide(prs.slide_layouts[3])
+                            title = slide.shapes.title
+                            title.text = totalTitle
+                            placeholder = slide.placeholders[1]
+                            placeholder.insert_picture('data/tmp/{}-{}.png'.format(dbTable, storageSystemId))
+                        
     prs.slides.add_slide(prs.slide_layouts[12])
     prs.save('data/tmp/hvReport.pptx')
     for f in os.listdir('data/tmp'):

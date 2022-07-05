@@ -1,0 +1,172 @@
+[
+    {
+        "title": "Storage Usage Rate (%)",
+        "type": "all",
+        "filename": "hvAllStorageRates",
+        "query": "SELECT storageSystemId, totalUsableCapacity, usedCapacity, subscribedCapacity, max(date) as latest FROM hvStorages2 group by storageSystemId ORDER by storageSystemId",
+        "x": "variable",
+        "y": "value",
+        "ytitle": "utilization",
+        "column": "storageSystemId",
+        "melt":
+        {
+            "usageRate": "plotdf['usedCapacity'] * 100 / plotdf['totalUsableCapacity']",
+            "subscribedRate": "plotdf['subscribedCapacity'] * 100 / plotdf['totalUsableCapacity']"
+        }
+    },
+    {
+        "title": "Pool Usage Rate (%)",
+        "type": "all",
+        "filename": "hvAllPoolRates",
+        "query": "SELECT storageSystemId, storagePoolId, usedCapacity, capacity, max(date) as latest FROM hvPools2 group by storageSystemId, storagePoolId ORDER by storageSystemId, storagePoolId",
+        "x": "storagePoolId",
+        "y": "usageRate",
+        "ytitle": "utilization",
+        "column": "storageSystemId",
+        "melt": 
+        {
+            "usageRate": "plotdf['usedCapacity'] * 100 / plotdf['capacity']"
+        }
+    },
+    {
+        "title": "Total Storage Efficiency (%)",
+        "type": "all",
+        "filename": "hvAllStorageEfficiency",
+        "query": "SELECT storageSystemId, capacityEfficiencyRate, totalEfficiencyRate, max(date) as latest FROM hvStorages3 group by storageSystemId ORDER by storageSystemId",
+        "x": "variable",
+        "y": "value",
+        "ytitle": "efficiency",
+        "column": "storageSystemId",
+        "melt":
+        {
+            "capacityEfficiencyRate": "",
+            "totalEfficiencyRate": ""
+        }
+    },
+    {
+        "title": "Total Pool Efficiency (%)",
+        "type": "all",
+        "filename": "hvAllPoolEfficiency",
+        "query": "SELECT storageSystemId, storagePoolId, totalEfficiencyRate, max(date) as latest FROM hvPools3 group by storageSystemId, storagePoolId ORDER by storageSystemId, storagePoolId",
+        "x": "storagePoolId",
+        "y": "totalEfficiencyRate",
+        "ytitle": "efficiency",
+        "column": "storageSystemId",
+        "melt": 
+        {
+            "calc": ""
+        }
+    },
+    {
+        "title": "Average / Maximum MP Utilization Rate (%)",
+        "type": "allofseries",
+        "filename": "hvMaxAvgMpRates",
+        "query": "SELECT storageSystemId, date, utilization FROM hvMpUtilization1",
+        "parameter": "utilization",
+        "x": "variable",
+        "y": "value",
+        "ytitle": "percentage",
+        "column": "storageSystemId",
+        "melt":
+        {
+            "max": "plotdf.groupby(['storageSystemId'])['utilization'].max().rename('max').reset_index()",
+            "avg": "plotdf.groupby(['storageSystemId'])['utilization'].mean().rename('avg').reset_index()"
+        }
+    },
+    {
+        "title": "Storage IOPS (K)",
+        "type": "allofseries",
+        "filename": "hvMaxAvgIops",
+        "query": "SELECT storageSystemId, date, totalIOPS FROM hvIops1",
+        "parameter": "totalIOPS",
+        "x": "variable",
+        "y": "value",
+        "ytitle": "total IOPS",
+        "column": "storageSystemId",
+        "melt":
+        {
+            "max": "plotdf.groupby(['storageSystemId'])['totalIOPS'].max().rename('max').reset_index()",
+            "avg": "plotdf.groupby(['storageSystemId'])['totalIOPS'].mean().rename('avg').reset_index()"
+        }
+    },
+    {
+        "title": "Transfer Rate (KB/s)",
+        "type": "allofseries",
+        "filename": "hvMaxAvgTransferRate",
+        "query": "SELECT storageSystemId, date, transferRate FROM hvTransferRate1",
+        "parameter": "transferRate",
+        "x": "variable",
+        "y": "value",
+        "ytitle": "transfer rate",
+        "column": "storageSystemId",
+        "melt":
+        {
+            "max": "plotdf.groupby(['storageSystemId'])['transferRate'].max().rename('max').reset_index()",
+            "avg": "plotdf.groupby(['storageSystemId'])['transferRate'].mean().rename('avg').reset_index()"
+        }
+    },
+    {
+        "title": "Response Time (msec)",
+        "type": "allofseries",
+        "filename": "hvMaxAvgResponseTime",
+        "query": "SELECT storageSystemId, date, responseTime FROM hvResponseTime1",
+        "parameter": "responseTime",
+        "x": "variable",
+        "y": "value",
+        "ytitle": "response time",
+        "column": "storageSystemId",
+        "melt":
+        {
+            "max": "plotdf.groupby(['storageSystemId'])['responseTime'].max().rename('max').reset_index()",
+            "avg": "plotdf.groupby(['storageSystemId'])['responseTime'].mean().rename('avg').reset_index()"
+        }
+    },
+    {
+        "title": "Write Pending Rate (%)",
+        "type": "allofseries",
+        "filename": "hvMaxAvgCachePending",
+        "query": "SELECT storageSystemId, date, writePendingRate FROM hvCache1",
+        "parameter": "writePendingRate",
+        "x": "variable",
+        "y": "value",
+        "ytitle": "Cache Pending",
+        "column": "storageSystemId",
+        "melt":
+        {
+            "max": "plotdf.groupby(['storageSystemId'])['writePendingRate'].max().rename('max').reset_index()",
+            "avg": "plotdf.groupby(['storageSystemId'])['writePendingRate'].mean().rename('avg').reset_index()"
+        }
+    },
+    {
+        "title": "Average / Maximum MPB Utilization Rate (%)",
+        "type": "series",
+        "filename": "hvMaxAvgMpbRates",
+        "query": "SELECT * FROM hvMpbUtilization1 WHERE storageSystemId='{}'",
+        "parameter": "utilization",
+        "x": "variable",
+        "y": "value",
+        "ytitle": "utilization",
+        "column": "mpb",
+        "melt":
+        {
+            "max": "plotdf.groupby(['storageSystemId', 'mpb'])['utilization'].max().rename('max').reset_index()",
+            "avg": "plotdf.groupby(['storageSystemId', 'mpb'])['utilization'].mean().rename('avg').reset_index()"
+        }
+    },
+    {
+        "title": "Port Response Time (msec)",
+        "type": "series",
+        "filename": "hvMaxAvgPortResponse",
+        "query": "SELECT * FROM hvPortResponse1 WHERE storageSystemId='{}'",
+        "parameter": "responseTime",
+        "x": "variable",
+        "y": "value",
+        "ytitle": "response time",
+        "column": "port",
+        "melt":
+        {
+            "max": "plotdf.groupby(['storageSystemId', 'port'])['responseTime'].max().rename('max').reset_index()",
+            "avg": "plotdf.groupby(['storageSystemId', 'port'])['responseTime'].mean().rename('avg').reset_index()"
+        }
+    }
+]
