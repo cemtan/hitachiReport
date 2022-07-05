@@ -197,14 +197,20 @@ def getPlot(source, title, columnStr, columnFloat):
 def imgResize(file):
     image = Image.open(file)
     imgWidth, imgHeight = image.size
-    if imgWidth/imgHeight > 2.2:
-        canvasHeight = int(imgWidth / 2.2)
-        canvasWidth = imgWidth
+    if imgWidth <= 880 and imgHeight <= 400:
+        canvasHeight = 400
+        canvasWidth = 880
+        newImage = Image.new(image.mode, (canvasWidth, canvasHeight), 255)
+        newImage.paste(image, (0, (canvasHeight - imgHeight) // 2))
     else:
-        canvasWidth = int(imgHeight * 2.2)
-        canvasHeight = imgHeight
-    newImage = Image.new(image.mode, (canvasWidth, canvasHeight), 255)
-    newImage.paste(image, ((canvasWidth - imgWidth) // 2, (canvasHeight - imgHeight) // 2))
+        if imgWidth/imgHeight > 2.2:
+            canvasHeight = int(imgWidth / 2.2)
+            canvasWidth = imgWidth
+        else:
+            canvasWidth = int(imgHeight * 2.2)
+            canvasHeight = imgHeight
+        newImage = Image.new(image.mode, (canvasWidth, canvasHeight), 255)
+        newImage.paste(image, ((canvasWidth - imgWidth) // 2, (canvasHeight - imgHeight) // 2))
     newImage.save(fp=file)
 
 # ### MAIN Part ######################################### #
